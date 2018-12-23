@@ -108,7 +108,7 @@ public class SplashActivity extends ButterBaseActivity {
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理
                     // 密码信息暂时无用，但用户名密码等信息将来或可用于扩展鉴权
 //                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "172.21.12.76", 6389, "张三san", "8888888", "研发部e");
-                    IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, "172.21.12.66", 6389, "张三san", "8888888", "研发部e");
+                    IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, "192.168.0.110", 6389, "张三san", "8888888", "研发部e");
 
                     int version = IdFaceSdk.IdFaceSdkVer();
                     // 初始化人脸算法

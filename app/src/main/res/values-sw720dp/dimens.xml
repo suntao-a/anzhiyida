@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="icon_service">80dp</dimen>
+    <dimen name="font_head">26sp</dimen>
+    <dimen name="font_splash_line_1">30sp</dimen>
+    <dimen name="font_splash_line_2">16sp</dimen>
+</resources>

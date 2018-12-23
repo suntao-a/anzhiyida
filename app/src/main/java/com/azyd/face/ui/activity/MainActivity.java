@@ -52,11 +52,6 @@ public class MainActivity extends ButterBaseActivity {
         //设置surface为透明
         surfaceview.getHolder().setFormat(PixelFormat.TRANSPARENT);
         cameraView.setSurfaceView(surfaceview);
-        cameraView.setPhotoAngle(CameraConstant.ROTATE)
-                .setInterval(CameraConstant.INTERVAL)
-                .setMirror(CameraConstant.MIRROR);
-
-
     }
 
     @Override

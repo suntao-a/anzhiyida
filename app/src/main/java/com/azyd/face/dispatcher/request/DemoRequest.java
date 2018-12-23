@@ -58,7 +58,7 @@ public class DemoRequest extends BaseRequest {
             }
 
             ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
-            if(ret>= CameraConstant.FEATURE_QUALITY_PASS){
+            if(ret>= CameraConstant.getDefaultCameraParam().getFeatureQualityPass()){
                 return "你是"+item.getName();
             }
         }

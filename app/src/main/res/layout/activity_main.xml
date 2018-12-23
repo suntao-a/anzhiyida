@@ -26,33 +26,40 @@
             android:background="@drawable/main_name_bg"
             android:text="@string/main_top_tip"
             android:textColor="@android:color/white"
-            android:textSize="17sp"
+            android:textSize="@dimen/font_head"
             android:textStyle="bold" />
 
-        <FrameLayout
+        <android.support.constraint.ConstraintLayout
             android:id="@+id/fl_surface"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:background="@drawable/main_surface_frame"
-            app:layout_constraintBottom_toTopOf="@+id/fl_dialog"
             android:gravity="center"
+            app:layout_constraintBottom_toTopOf="@+id/fl_dialog"
             app:layout_constraintTop_toBottomOf="@+id/tv_name"
             app:layout_constraintVertical_chainStyle="spread"
             app:layout_constraintVertical_weight="2">
 
             <com.azyd.face.view.CameraPreview
                 android:id="@+id/cameraView"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <SurfaceView
                 android:id="@+id/surfaceview"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </FrameLayout>
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="#02e0e0e0"
+                app:layout_constraintBottom_toBottomOf="@+id/cameraView"
+                app:layout_constraintLeft_toLeftOf="@+id/cameraView"
+                app:layout_constraintRight_toRightOf="@+id/cameraView"
+                app:layout_constraintTop_toTopOf="@+id/cameraView" />
+        </android.support.constraint.ConstraintLayout>
 
         <!--<ImageView-->
         <!--android:id="@+id/iv_service"-->
@@ -82,14 +89,14 @@
                 android:gravity="center"
                 android:text="审核未通过"
                 android:textColor="@android:color/white"
-                android:textSize="20sp"
+                android:textSize="@dimen/font_splash_line_1"
                 android:textStyle="bold" />
         </FrameLayout>
 
         <ImageView
             android:id="@+id/iv_service"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="@dimen/icon_service"
+            android:layout_height="@dimen/icon_service"
             android:layout_marginTop="10dp"
             android:src="@drawable/icon_service"
             app:layout_constraintBottom_toBottomOf="parent"

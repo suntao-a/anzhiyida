@@ -16,7 +16,7 @@ public class FaceListManager {
             synchronized (FaceListManager.class){
                 if(faceListManager==null){
                     faceListManager = new FaceListManager();
-                    faceListManager.mSaveTimes=CameraConstant.FACE_SAVE_TIMES;
+                    faceListManager.mSaveTimes=CameraConstant.getDefaultCameraParam().getFaceSaveTimes();
                 }
             }
         }
@@ -41,7 +41,7 @@ public class FaceListManager {
                 saveTimesMap.remove(item);
                 continue;
             }
-            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=CameraConstant.FEATURE_QUALITY_PASS){
+            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=CameraConstant.getDefaultCameraParam().getFeatureQualityPass()){
                 return true;
             }
         }
