@@ -47,6 +47,7 @@ public class ServiceGenerator {
                     .create()));
 
 
+
     private final static OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
             //连接超时时间
             .connectTimeout(NetConstant.CONNECT_TIMEOUT, TimeUnit.SECONDS)
