@@ -18,5 +18,5 @@ import retrofit2.http.Part;
 public interface GateService {
     @FormUrlEncoded
     @POST(URL.CHECK_REGIST)
-    Observable<ResponseBase> checkRegist(@Part Map<String, String> params);
+    Observable<ResponseBase> checkRegist(@Part Map<String, Object> params);
 }

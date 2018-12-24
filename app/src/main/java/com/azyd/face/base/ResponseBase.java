@@ -9,7 +9,13 @@ public class ResponseBase {
     StackTraceElement[] mTraceElements;
     int code;
     String message;
+    public ResponseBase(){
 
+    }
+    public ResponseBase(int code,String message){
+        this.code = code;
+        this.message = message;
+    }
     public StackTraceElement[] getTraceElements() {
         return mTraceElements;
     }

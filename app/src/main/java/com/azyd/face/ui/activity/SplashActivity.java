@@ -8,11 +8,16 @@ import com.alibaba.android.arouter.facade.annotation.Route;
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.R;
 import com.azyd.face.base.ButterBaseActivity;
+import com.azyd.face.base.ResponseBase;
 import com.azyd.face.constant.RoutePath;
+import com.azyd.face.net.ServiceGenerator;
+import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.AppCompat;
+import com.azyd.face.util.RequestParam;
 import com.azyd.face.util.permission.PermissionReq;
 import com.azyd.face.util.permission.PermissionResult;
 import com.azyd.face.util.permission.Permissions;
+import com.azyd.face.util.rxjava.ComposeUtils;
 import com.idfacesdk.IdFaceSdk;
 
 import java.util.concurrent.TimeUnit;
@@ -99,10 +104,11 @@ public class SplashActivity extends ButterBaseActivity {
     }
 
     protected void StartSdk() {
-        Observable.create(new ObservableOnSubscribe<String>() {
+        Observable<ResponseBase> startsdk = Observable.create(new ObservableOnSubscribe<ResponseBase>() {
             @Override
-            public void subscribe(ObservableEmitter<String> e) {
+            public void subscribe(ObservableEmitter<ResponseBase> e) {
                 String str;
+                ResponseBase response = new ResponseBase();
                 if (bSdkInit == false) {
                     // 设置云授权信息,服务器IP地址需指定实际运行的云授权服务器地址
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理
@@ -118,31 +124,50 @@ public class SplashActivity extends ButterBaseActivity {
                     if (ret == 0) {
                         bSdkInit = true;
                         str = "NET-SDK启动成功, 用时 " + (tEnd - tStart) + " 毫秒";
+                        response.setCode(200);
+                        response.setMessage(str);
                     } else {
                         str = "NET-SDK启动失败";
+                        response.setCode(0);
+                        response.setMessage(str);
                     }
 
                 } else {
                     str = "NET-SDK已启动";
+                    response.setCode(200);
+                    response.setMessage(str);
                 }
-                e.onNext(str);
+
+
+                e.onNext(response);
             }
-        }).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
+        }).subscribeOn(Schedulers.io());
+        Observable<ResponseBase> startCheck = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac","imei").create());
+        Observable.concat(startsdk,startCheck)
+            .compose(ComposeUtils.asynSchedule())
+                .subscribe(new Consumer<ResponseBase>() {
+
                     @Override
-                    public void accept(String s) {
-                        tvProcess.setText(s);
-                        disposable = Observable.timer(2, TimeUnit.SECONDS)
-                                .subscribe(new Consumer<Long>() {
-                                    @Override
-                                    public void accept(Long aLong) {
-                                        finish();
-                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
-                                    }
-                                });
+                    public void accept(ResponseBase responseBase) throws Exception {
+                        
                     }
                 });
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(new Consumer<String>() {
+//                    @Override
+//                    public void accept(String s) {
+//                        tvProcess.setText(s);
+//                        disposable = Observable.timer(2, TimeUnit.SECONDS)
+//                                .subscribe(new Consumer<Long>() {
+//                                    @Override
+//                                    public void accept(Long aLong) {
+//                                        finish();
+//                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
+//                                    }
+//                                });
+//                    }
+//                })
+        ;
 
 
     }
