@@ -51,7 +51,7 @@ public class Utils {
             pixels[i * 3 + 2] = rgba[i * 4 + 2];       //B
 
         }
-
+        rgba=null;
         return pixels;
     }
     /**

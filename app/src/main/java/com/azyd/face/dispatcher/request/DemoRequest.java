@@ -14,6 +14,7 @@ import java.io.File;
 
 public class DemoRequest extends BaseRequest {
     private byte[] mFeatureData;
+
     public DemoRequest(byte[] featureData){
         this(0);
         mFeatureData = featureData;

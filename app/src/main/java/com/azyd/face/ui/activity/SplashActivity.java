@@ -1,18 +1,24 @@
 package com.azyd.face.ui.activity;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.widget.TextView;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.R;
+import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.ResponseBase;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.AppCompat;
+import com.azyd.face.util.PhoneInfoUtil;
 import com.azyd.face.util.RequestParam;
 import com.azyd.face.util.permission.PermissionReq;
 import com.azyd.face.util.permission.PermissionResult;
@@ -20,6 +26,7 @@ import com.azyd.face.util.permission.Permissions;
 import com.azyd.face.util.rxjava.ComposeUtils;
 import com.idfacesdk.IdFaceSdk;
 
+import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
@@ -29,6 +36,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -39,7 +47,7 @@ import io.reactivex.schedulers.Schedulers;
  */
 @Route(path = RoutePath.SPLASH)
 public class SplashActivity extends ButterBaseActivity {
-    Disposable disposable;
+    Disposable disposable1,disposable2;
     @BindView(R.id.tv_process)
     TextView tvProcess;
 
@@ -74,8 +82,26 @@ public class SplashActivity extends ButterBaseActivity {
                         finish();
                     }
                 }
-                .setShowGoSetting(false))
+                        .setShowGoSetting(false))
                 .request();
+    }
+
+    public static class MyHandler extends Handler {
+        WeakReference<Activity> mWeakReference;
+
+        public MyHandler(Activity activity) {
+            mWeakReference = new WeakReference<Activity>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            final Activity activity = mWeakReference.get();
+            if (activity != null) {
+                if (msg.what == 1) {
+
+                }
+            }
+        }
     }
 
     @Override
@@ -94,13 +120,15 @@ public class SplashActivity extends ButterBaseActivity {
     }
 
     @Override
-    public void onBackPressed() {
+    protected void onBeforeDestroy() {
         if (bSdkInit) {
             bSdkInit = false;
             IdFaceSdk.IdFaceSdkUninit();
         }
-        disposable.dispose();
-        super.onBackPressed();
+        disposable1.dispose();
+        if(disposable2!=null){
+            disposable2.dispose();
+        }
     }
 
     protected void StartSdk() {
@@ -140,36 +168,50 @@ public class SplashActivity extends ButterBaseActivity {
 
 
                 e.onNext(response);
+                e.onComplete();
             }
         }).subscribeOn(Schedulers.io());
-        Observable<ResponseBase> startCheck = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac","imei").create());
-        Observable.concat(startsdk,startCheck)
-            .compose(ComposeUtils.asynSchedule())
+        Observable<ResponseBase> startCheck = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", PhoneInfoUtil.getIMEI(this)).create());
+        disposable1 = Observable.concat( startCheck,startsdk)
+                .compose(ComposeUtils.asynSchedule())
                 .subscribe(new Consumer<ResponseBase>() {
 
                     @Override
                     public void accept(ResponseBase responseBase) throws Exception {
-                        
+                        tvProcess.setText(responseBase.getMessage());
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        disposable2 = Observable.timer(2, TimeUnit.SECONDS)
+                                .subscribe(new Consumer<Long>() {
+                                    @Override
+                                    public void accept(Long aLong) {
+                                        finish();
+                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
+                                    }
+                                });
                     }
                 });
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribe(new Consumer<String>() {
-//                    @Override
-//                    public void accept(String s) {
-//                        tvProcess.setText(s);
-//                        disposable = Observable.timer(2, TimeUnit.SECONDS)
-//                                .subscribe(new Consumer<Long>() {
-//                                    @Override
-//                                    public void accept(Long aLong) {
-//                                        finish();
-//                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
-//                                    }
-//                                });
-//                    }
-//                })
-        ;
 
 
+    }
+
+    private Observable<ResponseBase> initAppInternal(){
+        return Observable.create(new ObservableOnSubscribe<ResponseBase>() {
+            @Override
+            public void subscribe(ObservableEmitter<ResponseBase> e) {
+                AppInternal.getInstance().setIMEI(PhoneInfoUtil.getIMEI(getApplication()));
+                ResponseBase response = new ResponseBase();
+                response.setCode(200);
+                response.setMessage("参数初始化完成...");
+            }
+        });
     }
 
 }

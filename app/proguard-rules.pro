@@ -30,6 +30,9 @@
 -keep public class * extends java.lang.Exception {*;}
 -keep public class * extends android.preference.Preference
 
+-keep class * implements com.kidswant.component.proguard.IProguardKeeper {
+    *;
+}
 #保护指定的类和类的成员的名称，如果所有指定的类成员出席（在压缩步骤之后）
  # 保持 native 方法不被混淆
 -keepclasseswithmembernames class * {

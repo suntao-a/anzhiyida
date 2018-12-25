@@ -46,7 +46,7 @@ public abstract class ButterBaseActivity extends BaseActivity{
      * @param outState
      */
     protected abstract void onReStore(Bundle outState);
-
+    protected abstract void onBeforeDestroy();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,6 +76,7 @@ public abstract class ButterBaseActivity extends BaseActivity{
     }
     @Override
     public void onDestroy() {
+        onBeforeDestroy();
         super.onDestroy();
         unbinder.unbind();
     }

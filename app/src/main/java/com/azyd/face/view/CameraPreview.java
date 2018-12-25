@@ -52,6 +52,7 @@ import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
 import com.azyd.face.dispatcher.SingleDispatcher;
+import com.azyd.face.dispatcher.request.PreviewRequest;
 import com.azyd.face.util.Utils;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;
@@ -633,8 +634,8 @@ public class CameraPreview extends TextureView {
                         mOnImageAvailableListener, mBackgroundHandler);
                 mImagePreviewReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.JPEG, 1);
-//                mImagePreviewReader.setOnImageAvailableListener(
-//                        mOnImagePreViewAvailableListener, mBackgroundHandler);
+                mImagePreviewReader.setOnImageAvailableListener(
+                        mOnImagePreViewAvailableListener, mBackgroundHandler);
                 int orientation = getResources().getConfiguration().orientation;
 //                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
 //                    setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
@@ -857,115 +858,120 @@ public class CameraPreview extends TextureView {
         @SuppressLint("CheckResult")
         @Override
         public void onImageAvailable(ImageReader reader) {
-//            int format = reader.getImageFormat();
-//
-//            Image image = reader.acquireLatestImage();
-//
-//            if (image == null) {
-//                return;
-//            }
-//            try {
-//                long tempcurrtime = System.currentTimeMillis();
-//                if (tempcurrtime - currentTime > mInterval) {
-//                    //处理
-//                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-//                    byte[] data = new byte[buffer.remaining()];
-//                    buffer.get(data);
-//                    Observable.just(data)
-//                            .map(new Function<byte[], FACE_DETECT_RESULT>() {
-//                                @Override
-//                                public FACE_DETECT_RESULT apply(byte[] bytes) {
-//                                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-//                                    //旋转、镜像
-//                                    Bitmap faceImg = null;
-//                                    if(mPhotoAngle==0&&!mMirror){
-//                                        faceImg = bitmap;
-//                                    } else {
-//                                        faceImg = Utils.rotaingImageView(bitmap, mPhotoAngle, mMirror);
-//                                    }
-//
-//                                    int width = faceImg.getWidth();
-//                                    int height = faceImg.getHeight();
-//                                    byte[] faceRGB = Utils.bitmap2RGB(faceImg);
-//                                    bitmap.recycle();
-//                                    faceImg.recycle();
-//                                    //识别
-//                                    int ret = 0;
-//                                    FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
-//                                    int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
-//                                    byte[] featureData = new byte[nFeatureSize];
-//                                    ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
-//                                    if (ret <= 0) {
-//                                        //检测人脸失败
-//                                        return null;
-//                                    }
-//
-//                                    ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
-//                                    if (ret != 0) {
-//                                        //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
-//                                        return null;
-//                                    }
-//                                    if(faceDetectResult.nFaceLeft==0&&faceDetectResult.nFaceRight==0){
-//                                        return null;
-//                                    }
+            int format = reader.getImageFormat();
+
+            Image image = reader.acquireLatestImage();
+
+            if (image == null) {
+                return;
+            }
+            try {
+                long tempcurrtime = System.currentTimeMillis();
+                if (tempcurrtime - currentTime > mInterval) {
+                    //处理
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    byte[] data = new byte[buffer.remaining()];
+                    buffer.get(data);
+                    Observable.just(data)
+                            .map(new Function<byte[], FACE_DETECT_RESULT>() {
+                                @Override
+                                public FACE_DETECT_RESULT apply(byte[] bytes) {
+                                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                                    //旋转、镜像
+                                    Bitmap faceImg = null;
+                                    if(mPhotoAngle==0&&!mMirror){
+                                        faceImg = bitmap;
+                                    } else {
+                                        faceImg = Utils.rotaingImageView(bitmap, mPhotoAngle, mMirror);
+                                    }
+
+                                    int width = faceImg.getWidth();
+                                    int height = faceImg.getHeight();
+                                    byte[] faceRGB = Utils.bitmap2RGB(faceImg);
+                                    bitmap.recycle();
+                                    faceImg.recycle();
+                                    //识别
+                                    int ret = 0;
+                                    FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
+                                    int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
+                                    byte[] featureData = new byte[nFeatureSize];
+                                    ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
+                                    if (ret <= 0) {
+                                        //检测人脸失败
+                                        return null;
+                                    }
+
+                                    ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
+                                    if (ret != 0) {
+                                        //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
+                                        return null;
+                                    }
+                                    if(faceDetectResult.nFaceLeft==0&&faceDetectResult.nFaceRight==0){
+                                        return null;
+                                    }
+                                    PreviewRequest previewRequest = new PreviewRequest();
+                                    previewRequest.setSize(width,height)
+                                            .setFaceData(faceRGB)
+                                            .setFaceDetectData(faceDetectResult)
+                                            .setFeatureData(featureData);
 //                                    DemoRequest request = new DemoRequest(featureData);
-//                                    mSingleDispatcher.add(request);
-//
-//                                    Log.e(TAG, "Left:" + faceDetectResult.nFaceLeft + " _Right:" + faceDetectResult.nFaceRight + "_Top:" + faceDetectResult.nFaceTop + "_Bottom:" + faceDetectResult.nFaceBottom);
-//                                    float widthRate = getWidth() / (float) width;
-//                                    float heightRate = getHeight() / (float) height;
-//                                    faceDetectResult.nFaceLeft = (int) (faceDetectResult.nFaceLeft * widthRate);
-//                                    faceDetectResult.nFaceRight = (int) (faceDetectResult.nFaceRight * widthRate);
-//                                    faceDetectResult.nFaceTop = (int) (faceDetectResult.nFaceTop * heightRate);
-//                                    faceDetectResult.nFaceBottom = (int) (faceDetectResult.nFaceBottom * heightRate);
-//                                    return faceDetectResult;
-//
-//                                }
-//                            })
-//                            .subscribeOn(Schedulers.io())
-//                            .observeOn(AndroidSchedulers.mainThread())
-//                            .subscribe(new Consumer<FACE_DETECT_RESULT>() {
-//                                @Override
-//                                public void accept(FACE_DETECT_RESULT face_detect_result) {
-//                                    Canvas canvas = mSurfaceHolder.lockCanvas();
-//                                    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
-//                                    if (face_detect_result != null) {
-//                                        if (face_detect_result.nFaceLeft != 0
-//                                                || face_detect_result.nFaceRight != 0
-//                                                ) {
-//
-//                                            mRectF.left = face_detect_result.nFaceLeft;
-//                                            mRectF.right = face_detect_result.nFaceRight;
-//                                            mRectF.top = face_detect_result.nFaceTop;
-//                                            mRectF.bottom = face_detect_result.nFaceBottom;
-//                                            canvas.drawRect(mRectF, mPaint);
-//
-//                                        }
-//                                    }
-//                                    mSurfaceHolder.unlockCanvasAndPost(canvas);
-//                                }
-//                            }, new Consumer<Throwable>() {
-//                                @Override
-//                                public void accept(Throwable throwable) {
-//                                    Canvas canvas = mSurfaceHolder.lockCanvas();
-//                                    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
-//                                    mSurfaceHolder.unlockCanvasAndPost(canvas);
-//                                }
-//                            });
-//                    currentTime = tempcurrtime;
-//                }
-//
-//            } catch (Exception e) {
-//                Log.e(TAG, e.getMessage(), e);
-//            } finally {
-//                if (image != null) {
-//                    image.close();
-//
-//                }
-//
-//            }
-//
-//
+                                    mSingleDispatcher.add(previewRequest);
+
+                                    Log.e(TAG, "Left:" + faceDetectResult.nFaceLeft + " _Right:" + faceDetectResult.nFaceRight + "_Top:" + faceDetectResult.nFaceTop + "_Bottom:" + faceDetectResult.nFaceBottom);
+                                    float widthRate = getWidth() / (float) width;
+                                    float heightRate = getHeight() / (float) height;
+                                    faceDetectResult.nFaceLeft = (int) (faceDetectResult.nFaceLeft * widthRate);
+                                    faceDetectResult.nFaceRight = (int) (faceDetectResult.nFaceRight * widthRate);
+                                    faceDetectResult.nFaceTop = (int) (faceDetectResult.nFaceTop * heightRate);
+                                    faceDetectResult.nFaceBottom = (int) (faceDetectResult.nFaceBottom * heightRate);
+                                    return faceDetectResult;
+
+                                }
+                            })
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(new Consumer<FACE_DETECT_RESULT>() {
+                                @Override
+                                public void accept(FACE_DETECT_RESULT face_detect_result) {
+                                    Canvas canvas = mSurfaceHolder.lockCanvas();
+                                    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
+                                    if (face_detect_result != null) {
+                                        if (face_detect_result.nFaceLeft != 0
+                                                || face_detect_result.nFaceRight != 0
+                                                ) {
+
+                                            mRectF.left = face_detect_result.nFaceLeft;
+                                            mRectF.right = face_detect_result.nFaceRight;
+                                            mRectF.top = face_detect_result.nFaceTop;
+                                            mRectF.bottom = face_detect_result.nFaceBottom;
+                                            canvas.drawRect(mRectF, mPaint);
+
+                                        }
+                                    }
+                                    mSurfaceHolder.unlockCanvasAndPost(canvas);
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) {
+                                    Canvas canvas = mSurfaceHolder.lockCanvas();
+                                    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
+                                    mSurfaceHolder.unlockCanvasAndPost(canvas);
+                                }
+                            });
+                    currentTime = tempcurrtime;
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, e.getMessage(), e);
+            } finally {
+                if (image != null) {
+                    image.close();
+
+                }
+
+            }
+
+
         }
     };
 

@@ -5,10 +5,11 @@ package com.azyd.face.base;
  * @creat-time 2018/12/24 on 14:50
  * $describe$
  */
-public class ResponseBase {
+public class ResponseBase implements IProguardKeeper{
     StackTraceElement[] mTraceElements;
     int code;
     String message;
+    String voice;
     public ResponseBase(){
 
     }
@@ -38,5 +39,20 @@ public class ResponseBase {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getVoice() {
+        return voice;
+    }
+
+    public void setVoice(String voice) {
+        this.voice = voice;
+    }
+
+    public boolean isSuccess(){
+        if(code==200){
+            return true;
+        }
+        return false;
     }
 }
