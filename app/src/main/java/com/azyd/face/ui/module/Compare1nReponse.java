@@ -1,7 +1,7 @@
 package com.azyd.face.ui.module;
 
 import com.azyd.face.base.IProguardKeeper;
-import com.azyd.face.base.ResponseBase;
+import com.azyd.face.base.RespBase;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
  * @creat-time 2018/12/25 on 16:07
  * $describe$
  */
-public class Compare1nReponse extends ResponseBase implements IProguardKeeper {
+public class Compare1nReponse extends RespBase implements IProguardKeeper {
     Content content;
 
     public Content getContent() {

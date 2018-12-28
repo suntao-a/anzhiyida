@@ -3,7 +3,9 @@ package com.azyd.face.dispatcher;
 import android.os.Process;
 import android.util.Log;
 
+import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.core.BaseRequest;
+import com.azyd.face.dispatcher.core.FaceListManager;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -23,6 +25,7 @@ import io.reactivex.subjects.PublishSubject;
  * $describe$
  */
 public class SingleDispatcher extends Thread {
+    private static SingleDispatcher mInstance;
     private PublishSubject<String> mSubject = PublishSubject.create();
     private final String TAG = "SingleDispatcher";
     private final BlockingQueue<BaseRequest> mPriorityQueue;
@@ -36,7 +39,18 @@ public class SingleDispatcher extends Thread {
     public Observable<String> getObservable(){
         return mSubject;
     }
-    public SingleDispatcher() {
+    public static SingleDispatcher getInstance(){
+        if(mInstance==null){
+            synchronized (FaceListManager.class){
+                if(mInstance==null){
+                    mInstance = new SingleDispatcher();
+
+                }
+            }
+        }
+        return mInstance;
+    }
+    private SingleDispatcher() {
         isBusy = false;
         mPriorityQueue = new PriorityBlockingQueue<>();
         ThreadFactory threadFactory = new ThreadFactory() {

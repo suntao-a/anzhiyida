@@ -1,6 +1,6 @@
 package com.azyd.face.ui.service;
 
-import com.azyd.face.base.ResponseBase;
+import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.URL;
 import com.azyd.face.ui.module.Compare1nReponse;
 
@@ -8,8 +8,10 @@ import java.util.Map;
 
 import io.reactivex.Observable;
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
 
@@ -19,14 +21,19 @@ import retrofit2.http.Part;
  * $describe$
  */
 public interface GateService {
-    @FormUrlEncoded
     @POST(URL.CHECK_REGIST)
-    Observable<ResponseBase> checkRegist(@Part Map<String, Object> params);
-    @FormUrlEncoded
+    Call<RespBase> checkRegist(@Body Map<String, Object> params);
     @POST(URL.FACE_COMPARE_1_N)
-    Observable<Compare1nReponse> compare1N(@FieldMap Map<String, Object> params);
+    Call<Compare1nReponse> compare1N(@Body Map<String, Object> params);
 
-    @FormUrlEncoded
     @POST(URL.PASS_RECORD_PREVIEW)
-    Observable<ResponseBase> passRecordPreview(@FieldMap Map<String, Object> params);
+    Call<RespBase> passRecordPreview(@Body Map<String, Object> params);
+
+    @POST(URL.PASS_RECORD_NOCARD)
+    Call<RespBase> passRecordNoCard(@Body Map<String, Object> params);
+    @FormUrlEncoded
+    @POST("http://127.0.0.1:8080/device/opendoor")
+    Call<Map<String,Object>> openDoor(@FieldMap Map<String,Object> params);
+
+
 }

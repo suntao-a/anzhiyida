@@ -10,8 +10,13 @@ import android.widget.Toast;
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.azyd.face.R;
 import com.azyd.face.base.ButterBaseActivity;
+import com.azyd.face.base.rxjava.SimpleObserver;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.RoutePath;
+import com.azyd.face.dispatcher.SingleDispatcher;
+import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.request.CapturePhotoRequest;
+import com.azyd.face.dispatcher.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
 import com.azyd.face.view.CameraPreview;
 import com.idfacesdk.IdFaceSdk;
@@ -56,8 +61,8 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     protected void initData(Bundle savedInstanceState) {
-        cameraView.getSingleDispatcher()
-                .getObservable()
+        SingleDispatcher.getInstance().start();
+        SingleDispatcher.getInstance().getObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<String>() {
@@ -68,20 +73,52 @@ public class MainActivity extends ButterBaseActivity {
                            }, new Consumer<Throwable>() {
                                @Override
                                public void accept(Throwable throwable) {
-                                   tvResult.setText(throwable.getMessage());
+
                                }
                            }
                 );
+
+        cameraView.getObservable().subscribe(new Consumer<CameraPreview.CameraFaceData>() {
+                                                 @Override
+                                                 public void accept(CameraPreview.CameraFaceData cameraFaceData) throws Exception {
+                                                     if (cameraFaceData.getType() == CameraPreview.CameraFaceData.PREVIEW) {
+                                                         PreviewRequest request = new PreviewRequest();
+                                                         request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                                                                 .setFeatureData(cameraFaceData.getFeatureData())
+                                                                 .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                                                                 .setFaceData(cameraFaceData.getFaceData());
+                                                         SingleDispatcher.getInstance().add(request);
+
+                                                     } else if (cameraFaceData.getType() == CameraPreview.CameraFaceData.CAPTURE) {
+                                                         CapturePhotoRequest request = new CapturePhotoRequest();
+                                                         request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                                                                 .setFeatureData(cameraFaceData.getFeatureData())
+                                                                 .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                                                                 .setFaceData(cameraFaceData.getFaceData());
+                                                         SingleDispatcher.getInstance().add(request);
+                                                     }
+                                                 }
+                                             }, new Consumer<Throwable>() {
+                                                 @Override
+                                                 public void accept(Throwable throwable) throws Exception {
+
+                                                 }
+                                             }
+        );
     }
 
     @Override
     protected void onStore(Bundle outState) {
-        cameraView.onDestroy();
-        IdFaceSdk.IdFaceSdkUninit();
+
     }
 
     @Override
     protected void onReStore(Bundle outState) {
+
+    }
+
+    @Override
+    protected void onBeforeDestroy() {
 
     }
 
@@ -105,6 +142,8 @@ public class MainActivity extends ButterBaseActivity {
     @Override
     public void onDestroy() {
         cameraView.onDestroy();
+        FaceListManager.getInstance().onDestory();
+        SingleDispatcher.getInstance().quit();
         IdFaceSdk.IdFaceSdkUninit();
         super.onDestroy();
 

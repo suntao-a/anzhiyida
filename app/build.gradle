@@ -46,19 +46,20 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation "io.reactivex.rxjava2:rxjava:${RXJAVA_VERSION}"
     implementation "io.reactivex.rxjava2:rxandroid:${RXANDROID_VERSION}"
-
     implementation "com.trello.rxlifecycle2:rxlifecycle:${RXLIFECYCLE_VERSION}"
     implementation "com.trello.rxlifecycle2:rxlifecycle-android:${RXLIFECYCLE_VERSION}"
     implementation "com.android.support:multidex:${MULTIDEX_VERSION}"
     implementation "com.jakewharton:butterknife:${BUTTERKNIFE_VERSION}"
     implementation "com.squareup.retrofit2:retrofit:${RETROFIT_VERSION}"
-    implementation "com.squareup.retrofit2:converter-gson:${RETROFIT_VERSION}"//ConverterFactory的Gson依赖包
-    implementation "com.squareup.retrofit2:converter-scalars:${RETROFIT_VERSION}"//
+    implementation "com.squareup.retrofit2:converter-gson:${RETROFIT_VERSION}"
+    //ConverterFactory的Gson依赖包
+    implementation "com.squareup.retrofit2:converter-scalars:${RETROFIT_VERSION}"
+    //
     implementation "com.squareup.retrofit2:adapter-rxjava2:${RETROFIT_VERSION}"
     annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTERKNIFE_VERSION}"
     implementation 'com.alibaba:arouter-api:+'
@@ -66,4 +67,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation files('libs/Iandos-framework-v1.2.jar')
 }

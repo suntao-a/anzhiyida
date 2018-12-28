@@ -1,44 +1,55 @@
 package com.azyd.face.ui.activity;
 
-import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.iandos.IIandosService;
+import android.iandos.IandosManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
+import android.os.CountDownTimer;
+import android.os.SystemClock;
+import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.R;
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.ButterBaseActivity;
-import com.azyd.face.base.ResponseBase;
+import com.azyd.face.base.RespBase;
+import com.azyd.face.base.exception.RespThrowable;
+import com.azyd.face.base.exception.ServerException;
+import com.azyd.face.base.rxjava.AsynTransformer;
+import com.azyd.face.base.rxjava.SimpleObserver;
+import com.azyd.face.constant.ExtraName;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.AppCompat;
 import com.azyd.face.util.PhoneInfoUtil;
 import com.azyd.face.util.RequestParam;
+import com.azyd.face.util.SharedPreferencesHelper;
+import com.azyd.face.util.ShowMyToast;
 import com.azyd.face.util.permission.PermissionReq;
 import com.azyd.face.util.permission.PermissionResult;
 import com.azyd.face.util.permission.Permissions;
-import com.azyd.face.util.rxjava.ComposeUtils;
 import com.idfacesdk.IdFaceSdk;
 
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 
 /**
  * @author suntao
@@ -47,10 +58,12 @@ import io.reactivex.schedulers.Schedulers;
  */
 @Route(path = RoutePath.SPLASH)
 public class SplashActivity extends ButterBaseActivity {
-    Disposable disposable1,disposable2;
+    Disposable disposable2;
     @BindView(R.id.tv_process)
     TextView tvProcess;
-
+    @BindView(R.id.image_back)
+    ImageView imageBack;
+    AlertDialog dialog;
     private String strCacheDir = "";
     private boolean bSdkInit = false;
 
@@ -74,7 +87,7 @@ public class SplashActivity extends ButterBaseActivity {
                     @Override
                     public void onGranted() {
                         tvProcess.setText("申请权限成功..");
-                        StartSdk();
+                        initBackground();
                     }
 
                     @Override
@@ -86,27 +99,21 @@ public class SplashActivity extends ButterBaseActivity {
                 .request();
     }
 
-    public static class MyHandler extends Handler {
-        WeakReference<Activity> mWeakReference;
-
-        public MyHandler(Activity activity) {
-            mWeakReference = new WeakReference<Activity>(activity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            final Activity activity = mWeakReference.get();
-            if (activity != null) {
-                if (msg.what == 1) {
-
-                }
-            }
-        }
-    }
 
     @Override
     protected void initData(Bundle savedInstanceState) {
+        mTimer = new CountDownTimer(3000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                isRun = true;
+            }
 
+            @Override
+            public void onFinish() {
+                isRun = false;
+                count = 0;
+            }
+        };
     }
 
     @Override
@@ -121,28 +128,140 @@ public class SplashActivity extends ButterBaseActivity {
 
     @Override
     protected void onBeforeDestroy() {
-        if (bSdkInit) {
-            bSdkInit = false;
-            IdFaceSdk.IdFaceSdkUninit();
-        }
-        disposable1.dispose();
-        if(disposable2!=null){
+        if (disposable2 != null) {
             disposable2.dispose();
         }
     }
 
-    protected void StartSdk() {
-        Observable<ResponseBase> startsdk = Observable.create(new ObservableOnSubscribe<ResponseBase>() {
+    @Override
+    public void onBackPressed() {
+        if (bSdkInit) {
+            bSdkInit = false;
+            IdFaceSdk.IdFaceSdkUninit();
+        }
+        super.onBackPressed();
+    }
+
+    protected void initBackground() {
+        Observable.concat(createInitMac(),createInitIandosManager(), createCheckMac(), createStartSDK())
+                .compose(new AsynTransformer())
+                .subscribe(new SimpleObserver() {
+                    @Override
+                    public void onError(RespThrowable responeThrowable) {
+                        tvProcess.setText(responeThrowable.getMessage());
+                    }
+
+                    @Override
+                    public void onSuccess(RespBase respBase) {
+                        tvProcess.setText(respBase.getMessage());
+                    }
+
+                    @Override
+                    public void onFail(RespBase respBase) {
+                        tvProcess.setText(respBase.getMessage());
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (dialog != null && dialog.isShowing()) {
+                            return;
+                        }
+                        disposable2 = Observable.timer(2, TimeUnit.SECONDS)
+                                .subscribe(new Consumer<Long>() {
+                                    @Override
+                                    public void accept(Long aLong) {
+                                        finish();
+                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
+                                    }
+                                });
+
+                    }
+                });
+
+    }
+
+    private Observable createInitMac() {
+        return Observable.create(new ObservableOnSubscribe<RespBase>() {
             @Override
-            public void subscribe(ObservableEmitter<ResponseBase> e) {
+            public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
+
+                String mac = PhoneInfoUtil.getIMEI(getApplication());
+                if (!TextUtils.isEmpty(mac)) {
+                    AppInternal.getInstance().setIMEI(mac);
+                    RespBase response = new RespBase();
+                    response.setCode(200);
+                    response.setMessage("mac获取地址成功...");
+                    e.onNext(response);
+                    e.onComplete();
+                } else {
+                    throw new ServerException(404, "mac地址获取失败...");
+                }
+
+            }
+        });
+    }
+
+    private Observable createInitIandosManager() {
+        return Observable.create(new ObservableOnSubscribe<RespBase>() {
+            @Override
+            public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
+                AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
+                if (AppInternal.getInstance().getIandosManager() != null) {
+                    RespBase response = new RespBase();
+                    response.setCode(200);
+                    response.setMessage("IandosManager初始化成功...");
+                    e.onNext(response);
+                    e.onComplete();
+                } else {
+                    throw new ServerException(404, "IandosManager初始化失败...");
+                }
+
+            }
+        });
+    }
+
+    private Observable createCheckMac() {
+        return Observable.create(new ObservableOnSubscribe<RespBase>() {
+            @Override
+            public void subscribe(ObservableEmitter<RespBase> e) throws ServerException {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
                 String str;
-                ResponseBase response = new ResponseBase();
+                RespBase response = null;
+                try {
+                    response = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
+                            .execute().body();
+                    if (response.isSuccess()) {
+                        response.setMessage("设备在线检测成功...");
+                        e.onNext(response);
+                        e.onComplete();
+                    } else {
+                        throw new ServerException(response.getCode(), "设备ID:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                    }
+                } catch (IOException e1) {
+                    throw new ServerException(404, e1.getMessage());
+                }
+
+            }
+        });
+    }
+
+    private Observable createStartSDK() {
+        return Observable.create(new ObservableOnSubscribe<RespBase>() {
+            @Override
+            public void subscribe(ObservableEmitter<RespBase> e) throws ServerException {
+                String str;
+                RespBase response = new RespBase();
                 if (bSdkInit == false) {
                     // 设置云授权信息,服务器IP地址需指定实际运行的云授权服务器地址
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理
                     // 密码信息暂时无用，但用户名密码等信息将来或可用于扩展鉴权
 //                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "172.21.12.76", 6389, "张三san", "8888888", "研发部e");
-                    IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, "192.168.0.110", 6389, "张三san", "8888888", "研发部e");
+                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
+                    IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, ip, 6389, "张三san", "8888888", "研发部e");
 
                     int version = IdFaceSdk.IdFaceSdkVer();
                     // 初始化人脸算法
@@ -156,8 +275,7 @@ public class SplashActivity extends ButterBaseActivity {
                         response.setMessage(str);
                     } else {
                         str = "NET-SDK启动失败";
-                        response.setCode(0);
-                        response.setMessage(str);
+                        throw new ServerException(404, str);
                     }
 
                 } else {
@@ -170,48 +288,57 @@ public class SplashActivity extends ButterBaseActivity {
                 e.onNext(response);
                 e.onComplete();
             }
-        }).subscribeOn(Schedulers.io());
-        Observable<ResponseBase> startCheck = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", PhoneInfoUtil.getIMEI(this)).create());
-        disposable1 = Observable.concat( startCheck,startsdk)
-                .compose(ComposeUtils.asynSchedule())
-                .subscribe(new Consumer<ResponseBase>() {
-
-                    @Override
-                    public void accept(ResponseBase responseBase) throws Exception {
-                        tvProcess.setText(responseBase.getMessage());
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-
-                    }
-                }, new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        disposable2 = Observable.timer(2, TimeUnit.SECONDS)
-                                .subscribe(new Consumer<Long>() {
-                                    @Override
-                                    public void accept(Long aLong) {
-                                        finish();
-                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
-                                    }
-                                });
-                    }
-                });
-
-
-    }
-
-    private Observable<ResponseBase> initAppInternal(){
-        return Observable.create(new ObservableOnSubscribe<ResponseBase>() {
-            @Override
-            public void subscribe(ObservableEmitter<ResponseBase> e) {
-                AppInternal.getInstance().setIMEI(PhoneInfoUtil.getIMEI(getApplication()));
-                ResponseBase response = new ResponseBase();
-                response.setCode(200);
-                response.setMessage("参数初始化完成...");
-            }
         });
     }
 
+    CountDownTimer mTimer;
+    int count = 0;
+    final int sum = 4;
+    boolean isRun = false;
+
+    @OnClick(R.id.image_back)
+    public void onViewClicked() {
+        if (!isRun) {
+            mTimer.start();
+        }
+        count++;
+
+        if (count < sum) {
+            if (sum - count < 2) {
+                Toast toast = Toast.makeText(this, "再点击" + (sum - count) + "次", Toast.LENGTH_LONG);
+                ShowMyToast.show(toast, 700);
+            }
+
+
+        } else {
+            count = 0;
+            View view = getLayoutInflater().inflate(R.layout.dialog_view, null);
+            final EditText editText = (EditText) view.findViewById(R.id.et_ip);
+            String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
+            if (!TextUtils.isEmpty(ip)) {
+                editText.setText(ip);
+            }
+            dialog = new AlertDialog.Builder(this)
+                    .setIcon(R.mipmap.ic_launcher)//设置标题的图片
+                    .setTitle("sdk server ip")//设置对话框的标题
+                    .setView(view)
+                    .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String content = editText.getText().toString().trim();
+                            SharedPreferencesHelper.getInstance().put(ExtraName.SDK_IP, content);
+                            Toast.makeText(SplashActivity.this, content, Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        }
+                    }).create();
+            dialog.setCanceledOnTouchOutside(false);
+            dialog.show();
+        }
+    }
 }

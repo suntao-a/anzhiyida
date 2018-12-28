@@ -55,7 +55,7 @@ public class ServiceGenerator {
             .writeTimeout(NetConstant.WRITE_TIMEOUT, TimeUnit.SECONDS)
             //读操作超时时间
             .readTimeout(NetConstant.READ_TIMEOUT, TimeUnit.SECONDS)
-            .addInterceptor(new HttpsInterceptor())
+//            .addInterceptor(new HttpsInterceptor())
             .sslSocketFactory(createSSLSocketFactory())
             .hostnameVerifier(new TrustAllHostnameVerifier())
             .build();

@@ -11,4 +11,28 @@ public class PersonInfo implements IProguardKeeper {
     String id;
     String personRegioncode;
     int score;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getPersonRegioncode() {
+        return personRegioncode;
+    }
+
+    public void setPersonRegioncode(String personRegioncode) {
+        this.personRegioncode = personRegioncode;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
 }

@@ -5,15 +5,15 @@ package com.azyd.face.base;
  * @creat-time 2018/12/24 on 14:50
  * $describe$
  */
-public class ResponseBase implements IProguardKeeper{
+public class RespBase implements IProguardKeeper{
     StackTraceElement[] mTraceElements;
     int code;
     String message;
     String voice;
-    public ResponseBase(){
+    public RespBase(){
 
     }
-    public ResponseBase(int code,String message){
+    public RespBase(int code, String message){
         this.code = code;
         this.message = message;
     }

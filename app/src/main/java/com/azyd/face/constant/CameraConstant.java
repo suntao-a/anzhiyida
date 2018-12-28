@@ -7,6 +7,7 @@ package com.azyd.face.constant;
  */
 public class CameraConstant {
     public static interface ICameraParam{
+        String getCameraId();
         /**
          * 根据预览成像的宽高比设置View的宽带比
          * @return
@@ -20,12 +21,17 @@ public class CameraConstant {
     }
 
 
-    public static ICameraParam getDefaultCameraParam(){
+    public static ICameraParam getCameraParam(){
         return new DefaultDeviceCamera();
     }
 
 
     public static class HuaXiaDeviceCamera implements ICameraParam{
+
+        @Override
+        public String getCameraId() {
+            return "0";
+        }
 
         @Override
         public boolean isViewNeedSwitchAspect() {
@@ -60,6 +66,11 @@ public class CameraConstant {
     public static class DefaultDeviceCamera implements ICameraParam{
 
         @Override
+        public String getCameraId() {
+            return "1";
+        }
+
+        @Override
         public boolean isViewNeedSwitchAspect() {
             return true;
         }
@@ -76,7 +87,7 @@ public class CameraConstant {
 
         @Override
         public int getInterval() {
-            return 10000;
+            return 200;
         }
 
         @Override
