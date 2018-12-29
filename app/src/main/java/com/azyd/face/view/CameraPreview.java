@@ -49,11 +49,11 @@ import android.widget.Toast;
 
 import com.azyd.face.app.AppContext;
 import com.azyd.face.constant.CameraConstant;
-import com.azyd.face.dispatcher.request.CapturePhotoRequest;
+
 import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
 import com.azyd.face.dispatcher.SingleDispatcher;
-import com.azyd.face.dispatcher.request.PreviewRequest;
+
 import com.azyd.face.dispatcher.request.SameFaceTestRequest;
 import com.azyd.face.util.Utils;
 import com.idfacesdk.FACE_DETECT_RESULT;

@@ -1,4 +1,4 @@
-package com.azyd.face.dispatcher.request;
+package com.azyd.face.ui.request;
 
 
 import android.util.Base64;

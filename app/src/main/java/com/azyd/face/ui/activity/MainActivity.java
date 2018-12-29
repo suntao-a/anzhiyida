@@ -5,25 +5,28 @@ import android.os.Bundle;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.azyd.face.R;
 import com.azyd.face.base.ButterBaseActivity;
-import com.azyd.face.base.rxjava.SimpleObserver;
-import com.azyd.face.constant.CameraConstant;
+import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.core.FaceListManager;
-import com.azyd.face.dispatcher.request.CapturePhotoRequest;
-import com.azyd.face.dispatcher.request.PreviewRequest;
+import com.azyd.face.ui.request.CapturePhotoRequest;
+import com.azyd.face.ui.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
 import com.azyd.face.view.CameraPreview;
 import com.idfacesdk.IdFaceSdk;
 
+import java.util.concurrent.TimeUnit;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -39,11 +42,15 @@ public class MainActivity extends ButterBaseActivity {
     TextView tvName;
     @BindView(R.id.tv_result)
     TextView tvResult;
+    @BindView(R.id.btn_custom)
+    TextView btnCustom;
+    Disposable mDisposable;
 
     @Override
     protected void beforeSetContent() {
         AppCompat.setFullWindow(getWindow());
     }
+
     @Override
     protected int getLayoutId() {
         return R.layout.activity_main;
@@ -69,6 +76,18 @@ public class MainActivity extends ButterBaseActivity {
                                @Override
                                public void accept(String s) {
                                    tvResult.setText(s);
+                                   if (mDisposable != null && !mDisposable.isDisposed()) {
+                                       mDisposable.dispose();
+                                   }
+                                   mDisposable = Observable.just("欢迎使用")
+                                           .delay(5, TimeUnit.SECONDS)
+                                           .compose(new AsynTransformer())
+                                           .subscribe(new Consumer<String>() {
+                                               @Override
+                                               public void accept(String s) throws Exception {
+                                                   tvResult.setText(s);
+                                               }
+                                           });
                                }
                            }, new Consumer<Throwable>() {
                                @Override
@@ -81,21 +100,29 @@ public class MainActivity extends ButterBaseActivity {
         cameraView.getObservable().subscribe(new Consumer<CameraPreview.CameraFaceData>() {
                                                  @Override
                                                  public void accept(CameraPreview.CameraFaceData cameraFaceData) throws Exception {
+                                                     switch (cameraFaceData.getType()) {
+                                                         case CameraPreview.CameraFaceData.PREVIEW:
+                                                             PreviewRequest request = new PreviewRequest();
+                                                             request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                                                                     .setFeatureData(cameraFaceData.getFeatureData())
+                                                                     .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                                                                     .setFaceData(cameraFaceData.getFaceData());
+                                                             SingleDispatcher.getInstance().add(request);
+                                                             break;
+                                                         case CameraPreview.CameraFaceData.CAPTURE:
+                                                             CapturePhotoRequest captureRequest = new CapturePhotoRequest();
+                                                             captureRequest.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                                                                     .setFeatureData(cameraFaceData.getFeatureData())
+                                                                     .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                                                                     .setFaceData(cameraFaceData.getFaceData());
+                                                             SingleDispatcher.getInstance().add(captureRequest);
+                                                             break;
+                                                     }
                                                      if (cameraFaceData.getType() == CameraPreview.CameraFaceData.PREVIEW) {
-                                                         PreviewRequest request = new PreviewRequest();
-                                                         request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                                                                 .setFeatureData(cameraFaceData.getFeatureData())
-                                                                 .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                                                                 .setFaceData(cameraFaceData.getFaceData());
-                                                         SingleDispatcher.getInstance().add(request);
+
 
                                                      } else if (cameraFaceData.getType() == CameraPreview.CameraFaceData.CAPTURE) {
-                                                         CapturePhotoRequest request = new CapturePhotoRequest();
-                                                         request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                                                                 .setFeatureData(cameraFaceData.getFeatureData())
-                                                                 .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                                                                 .setFaceData(cameraFaceData.getFaceData());
-                                                         SingleDispatcher.getInstance().add(request);
+
                                                      }
                                                  }
                                              }, new Consumer<Throwable>() {
@@ -134,7 +161,7 @@ public class MainActivity extends ButterBaseActivity {
         super.onPause();
     }
 
-    public void takePic(View view) {
+    public void takePic() {
         cameraView.takePicture();
     }
 
@@ -149,4 +176,15 @@ public class MainActivity extends ButterBaseActivity {
 
     }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // TODO: add setContentView(...) invocation
+        ButterKnife.bind(this);
+    }
+
+    @OnClick(R.id.btn_custom)
+    public void onViewClicked(View view) {
+        takePic();
+    }
 }
