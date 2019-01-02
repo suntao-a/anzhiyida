@@ -54,13 +54,13 @@ public class CapturePhotoRequest extends BaseRequest {
     }
 
     @Override
-    public String call() {
+    public RespBase call() {
         //对比本地列表
-        boolean have = FaceListManager.getInstance().contains(mFeatureData);
-        if (have) {
-            //本地列表已有,放弃此次请求
-            return "0";
-        }
+//        boolean have = FaceListManager.getInstance().contains(mFeatureData);
+//        if (have) {
+//            //本地列表已有,放弃此次请求
+//            return null;
+//        }
         //没有,就和服务端通信比对
         try {
             final GateService gateService = ServiceGenerator.createService(GateService.class);
@@ -73,12 +73,12 @@ public class CapturePhotoRequest extends BaseRequest {
                     .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                     .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                     .create()).execute().body();
-            return response.getMessage();
+            return response;
 
 
         } catch (Exception e) {
             RespThrowable throwable = ExceptionHandle.handleException(e);
-            return throwable.getMessage();
+            return new RespBase(200,throwable.getMessage());
         }
 
     }

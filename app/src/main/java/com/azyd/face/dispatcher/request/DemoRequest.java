@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 import com.azyd.face.app.AppContext;
+import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.util.Utils;
@@ -25,14 +26,15 @@ public class DemoRequest extends BaseRequest {
     }
 
     @Override
-    public String call() throws Exception {
+    public RespBase call() throws Exception {
         File file=new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath()+File.separator+ AppContext.getInstance().getPackageName());
         if(!file.exists()){
             file.mkdir();
         }
         File[] files = file.listFiles();
         if(files.length==0){
-            return file.getCanonicalPath()+"没有图片";
+            return new RespBase(200,file.getCanonicalPath()+"没有图片");
+
         }
         for(File item:files){
 
@@ -60,10 +62,10 @@ public class DemoRequest extends BaseRequest {
 
             ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
             if(ret>= CameraConstant.getCameraParam().getFeatureQualityPass()){
-                return "你是"+item.getName();
+                return new RespBase(200,"你是"+item.getName());
+
             }
         }
-        return "未比对成功";
-
+        return new RespBase(200,"未比对成功");
     }
 }

@@ -213,7 +213,8 @@ public class SplashActivity extends ButterBaseActivity {
                     e.onNext(response);
                     e.onComplete();
                 } else {
-                    throw new ServerException(404, "IandosManager初始化失败...");
+//                    throw new ServerException(404, "IandosManager初始化失败...");
+                    e.onComplete();
                 }
 
             }

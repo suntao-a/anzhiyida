@@ -440,6 +440,8 @@ public class CameraPreview extends TextureView {
                     }
                     break;
                 }
+                default:
+                    break;
             }
         }
 
@@ -855,6 +857,7 @@ public class CameraPreview extends TextureView {
                 ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
+                image.close();
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                 //旋转、镜像
                 Bitmap faceImg = null;

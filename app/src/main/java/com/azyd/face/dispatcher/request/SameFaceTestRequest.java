@@ -1,5 +1,6 @@
 package com.azyd.face.dispatcher.request;
 
+import com.azyd.face.base.RespBase;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
 
@@ -15,7 +16,7 @@ public class SameFaceTestRequest extends BaseRequest {
         mFeatureData = data;
     }
     @Override
-    public String call() throws Exception {
+    public RespBase call() throws Exception {
         if(!FaceListManager.getInstance().contains(mFeatureData)){
             FaceListManager.getInstance().put(mFeatureData);
         } else {

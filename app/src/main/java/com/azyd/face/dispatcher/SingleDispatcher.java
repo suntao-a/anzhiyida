@@ -3,6 +3,7 @@ package com.azyd.face.dispatcher;
 import android.os.Process;
 import android.util.Log;
 
+import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
@@ -26,7 +27,7 @@ import io.reactivex.subjects.PublishSubject;
  */
 public class SingleDispatcher extends Thread {
     private static SingleDispatcher mInstance;
-    private PublishSubject<String> mSubject = PublishSubject.create();
+    private PublishSubject<RespBase> mSubject = PublishSubject.create();
     private final String TAG = "SingleDispatcher";
     private final BlockingQueue<BaseRequest> mPriorityQueue;
     private volatile boolean mQuit = false;
@@ -34,9 +35,9 @@ public class SingleDispatcher extends Thread {
     private volatile int mCurrentPriority = -1;
     private final int REQUEST_TIMEOUT = 5000;
     private BaseRequest mCurrentRequest;
-    private Future<String> mCurrentfuture;
+    private Future<RespBase> mCurrentfuture;
     private ThreadPoolExecutor mExecutor;
-    public Observable<String> getObservable(){
+    public Observable<RespBase> getObservable(){
         return mSubject;
     }
     public static SingleDispatcher getInstance(){
@@ -116,7 +117,7 @@ public class SingleDispatcher extends Thread {
             }
             try {
                 mCurrentfuture = mExecutor.submit(mCurrentRequest);
-                String result = mCurrentfuture.get();
+                RespBase result = mCurrentfuture.get();
                 mSubject.onNext(result);
             } catch (CancellationException e) {
                 Log.e(TAG, "被取消");

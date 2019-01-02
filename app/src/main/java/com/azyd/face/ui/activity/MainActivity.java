@@ -9,6 +9,7 @@ import android.widget.TextView;
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.azyd.face.R;
 import com.azyd.face.base.ButterBaseActivity;
+import com.azyd.face.base.RespBase;
 import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
@@ -72,10 +73,10 @@ public class MainActivity extends ButterBaseActivity {
         SingleDispatcher.getInstance().getObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
+                .subscribe(new Consumer<RespBase>() {
                                @Override
-                               public void accept(String s) {
-                                   tvResult.setText(s);
+                               public void accept(RespBase result) {
+                                   tvResult.setText(result.getMessage());
                                    if (mDisposable != null && !mDisposable.isDisposed()) {
                                        mDisposable.dispose();
                                    }

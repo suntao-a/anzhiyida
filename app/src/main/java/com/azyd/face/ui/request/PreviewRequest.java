@@ -7,6 +7,7 @@ import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.exception.ExceptionHandle;
 import com.azyd.face.constant.CameraConstant;
+import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
@@ -56,7 +57,7 @@ public class PreviewRequest extends BaseRequest {
     }
 
     @Override
-    public String call() {
+    public RespBase call() {
         String result=null;
         //对比本地列表
         boolean have = FaceListManager.getInstance().contains(mFeatureData);
@@ -80,7 +81,7 @@ public class PreviewRequest extends BaseRequest {
 
                 //上报通行记录
                 RespBase resp = gateService.passRecordPreview(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
-                        .with("passType", "1")
+                        .with("passType", PassType.FACE)
                         .with("passPersonId", personInfo.getId())
                         .with("verifyPhoto", Base64.encodeToString(mFaceData, Base64.DEFAULT))
                         .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
@@ -94,14 +95,15 @@ public class PreviewRequest extends BaseRequest {
                 if(resp.isSuccess()){
                     //开门
 //                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch();
-                    return resp.getMessage();
-                }
 
+                }
+                return resp;
 
             } else {
                 //服务端没有，结束
                 FaceListManager.getInstance().put(mFeatureData,3);
-                return "服务端没有此人信息";
+                RespBase respBase = new RespBase(200,"服务端没有此人信息");
+                return respBase;
             }
 
 
@@ -112,11 +114,11 @@ public class PreviewRequest extends BaseRequest {
             } catch (InterruptedException e1) {
 
             }
-            return ExceptionHandle.handleException(e).getMessage();
+            RespBase respBase = new RespBase(200,ExceptionHandle.handleException(e).getMessage());
+            return respBase;
         }
 
 
 
-        return "0";
     }
 }

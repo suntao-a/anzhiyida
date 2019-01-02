@@ -1,5 +1,8 @@
 package com.azyd.face.dispatcher.core;
 
+
+import com.azyd.face.base.RespBase;
+
 import java.util.concurrent.Callable;
 
 /**
@@ -7,7 +10,7 @@ import java.util.concurrent.Callable;
  * @creat-time 2018/12/4 on 16:59
  * $describe$
  */
-public abstract class BaseRequest implements Callable<String>,Comparable<BaseRequest>{
+public abstract class BaseRequest implements Callable<RespBase>,Comparable<BaseRequest>{
     private int mPriority;
 
     public BaseRequest(int priority){

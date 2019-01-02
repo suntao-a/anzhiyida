@@ -6,7 +6,6 @@ package com.azyd.face.base;
  * $describe$
  */
 public class RespBase implements IProguardKeeper{
-    StackTraceElement[] mTraceElements;
     int code;
     String message;
     String voice;
@@ -17,14 +16,6 @@ public class RespBase implements IProguardKeeper{
         this.code = code;
         this.message = message;
     }
-    public StackTraceElement[] getTraceElements() {
-        return mTraceElements;
-    }
-
-    public void setTraceElements(StackTraceElement[] traceElements) {
-        mTraceElements = traceElements;
-    }
-
     public int getCode() {
         return code;
     }
