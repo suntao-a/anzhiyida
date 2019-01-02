@@ -87,7 +87,7 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/main_dialog_bg"
                 android:gravity="center"
-                android:text="审核未通过"
+                android:text="欢迎使用"
                 android:textColor="@android:color/white"
                 android:textSize="@dimen/font_splash_line_1"
                 android:textStyle="bold" />

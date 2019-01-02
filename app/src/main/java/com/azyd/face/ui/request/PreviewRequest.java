@@ -17,6 +17,8 @@ import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.RequestParam;
 import com.idfacesdk.FACE_DETECT_RESULT;
 
+import java.util.Map;
+
 /**
  * @author suntao
  * @creat-time 2018/12/4 on 17:13
@@ -63,7 +65,8 @@ public class PreviewRequest extends BaseRequest {
         boolean have = FaceListManager.getInstance().contains(mFeatureData);
         if (have) {
             //本地列表已有,放弃此次请求
-            return null;
+            RespBase respBase = new RespBase(200,null);
+            return respBase;
         }
         //没有,就和服务端通信比对
         try {
@@ -94,14 +97,15 @@ public class PreviewRequest extends BaseRequest {
                         .create()).execute().body();
                 if(resp.isSuccess()){
                     //开门
-//                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch();
-
+                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true,true);
+//                    Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
                 }
                 return resp;
 
             } else {
                 //服务端没有，结束
-                FaceListManager.getInstance().put(mFeatureData,3);
+
+                FaceListManager.getInstance().put(mFeatureData);
                 RespBase respBase = new RespBase(200,"服务端没有此人信息");
                 return respBase;
             }
@@ -109,11 +113,6 @@ public class PreviewRequest extends BaseRequest {
 
 
         } catch (Exception e) {
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException e1) {
-
-            }
             RespBase respBase = new RespBase(200,ExceptionHandle.handleException(e).getMessage());
             return respBase;
         }

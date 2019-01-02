@@ -2,6 +2,7 @@ package com.azyd.face.ui.activity;
 
 import android.graphics.PixelFormat;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
@@ -26,9 +27,11 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 @Route(path = RoutePath.MAIN)
@@ -76,12 +79,15 @@ public class MainActivity extends ButterBaseActivity {
                 .subscribe(new Consumer<RespBase>() {
                                @Override
                                public void accept(RespBase result) {
-                                   tvResult.setText(result.getMessage());
+                                   if(!TextUtils.isEmpty(result.getMessage())){
+                                       tvResult.setText(result.getMessage());
+                                   }
+
                                    if (mDisposable != null && !mDisposable.isDisposed()) {
                                        mDisposable.dispose();
                                    }
                                    mDisposable = Observable.just("欢迎使用")
-                                           .delay(5, TimeUnit.SECONDS)
+                                           .delay(3, TimeUnit.SECONDS)
                                            .compose(new AsynTransformer())
                                            .subscribe(new Consumer<String>() {
                                                @Override
@@ -92,7 +98,7 @@ public class MainActivity extends ButterBaseActivity {
                                }
                            }, new Consumer<Throwable>() {
                                @Override
-                               public void accept(Throwable throwable) {
+                               public void accept(Throwable throwable) throws Exception {
 
                                }
                            }

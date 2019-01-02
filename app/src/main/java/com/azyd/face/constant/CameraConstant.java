@@ -22,7 +22,7 @@ public class CameraConstant {
 
 
     public static ICameraParam getCameraParam(){
-        return new DefaultDeviceCamera();
+        return new HuaXiaDeviceCamera();
     }
 
 
