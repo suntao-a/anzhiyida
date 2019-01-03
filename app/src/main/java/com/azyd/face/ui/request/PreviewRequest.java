@@ -60,7 +60,6 @@ public class PreviewRequest extends BaseRequest {
 
     @Override
     public RespBase call() {
-        String result=null;
         //对比本地列表
         boolean have = FaceListManager.getInstance().contains(mFeatureData);
         if (have) {

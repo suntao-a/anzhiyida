@@ -83,7 +83,13 @@ public class MainActivity extends ButterBaseActivity {
         mHxCardReadManager = new HXCardReadManager(h,this);
         mHxCardReadManager.start();
         //启动单任务执行中心
-        SingleDispatcher.getInstance().start();
+        try{
+            SingleDispatcher.getInstance().start();
+        } catch (Exception e){
+
+        }
+
+
         SingleDispatcher.getInstance().getObservable()
                 .compose(new AsynTransformer())
                 .subscribe(new Consumer<RespBase>() {
@@ -284,6 +290,9 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+        }
         cameraView.onDestroy();
         mHxCardReadManager.close();
         FaceListManager.getInstance().onDestory();

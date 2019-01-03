@@ -10,13 +10,33 @@ import com.huashi.otg.sdk.HSIDCardInfo;
  * $describe$
  */
 public class MyHSIDCardInfo extends HSIDCardInfo {
-    Bitmap faceBmp;
-
-    public Bitmap getFaceBmp() {
+    byte[] faceBmp;
+    int width;
+    int height;
+    public byte[] getFaceBmp() {
         return faceBmp;
     }
 
-    public void setFaceBmp(Bitmap faceBmp) {
+    public MyHSIDCardInfo setFaceBmp(byte[] faceBmp) {
         this.faceBmp = faceBmp;
+        return this;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public MyHSIDCardInfo setWidth(int with) {
+        this.width = with;
+        return this;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public MyHSIDCardInfo setHeight(int height) {
+        this.height = height;
+        return this;
     }
 }
