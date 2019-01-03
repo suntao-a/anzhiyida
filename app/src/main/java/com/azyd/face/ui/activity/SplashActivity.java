@@ -185,7 +185,7 @@ public class SplashActivity extends ButterBaseActivity {
             @Override
             public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
 
-                String mac = PhoneInfoUtil.getIMEI(getApplication());
+                String mac = "865315031703669";//PhoneInfoUtil.getIMEI(getApplication());
                 if (!TextUtils.isEmpty(mac)) {
                     AppInternal.getInstance().setIMEI(mac);
                     RespBase response = new RespBase();
@@ -260,8 +260,8 @@ public class SplashActivity extends ButterBaseActivity {
                     // 设置云授权信息,服务器IP地址需指定实际运行的云授权服务器地址
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理
                     // 密码信息暂时无用，但用户名密码等信息将来或可用于扩展鉴权
-//                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "172.21.12.76", 6389, "张三san", "8888888", "研发部e");
-                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
+//                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "192.168.0.107", 6389, "张三san", "8888888", "研发部e");
+                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.107");
                     IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, ip, 6389, "张三san", "8888888", "研发部e");
 
                     int version = IdFaceSdk.IdFaceSdkVer();

@@ -12,7 +12,7 @@ public class FaceListManager {
     private static FaceListManager faceListManager;
     private CopyOnWriteArrayList<String> saveTimesMap = new CopyOnWriteArrayList<>();
     private ACache aCache;
-    private int mSaveTimes=6;
+    private int mSaveTimes=4;
     public static FaceListManager getInstance(){
         if(faceListManager==null){
             synchronized (FaceListManager.class){
