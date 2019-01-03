@@ -31,6 +31,10 @@ public interface GateService {
 
     @POST(URL.PASS_RECORD_NOCARD)
     Call<RespBase> passRecordNoCard(@Body Map<String, Object> params);
+
+    @POST(URL.PASS_RECORD_IDCARD)
+    Call<RespBase> passRecordIDCard(@Body Map<String, Object> params);
+
     @FormUrlEncoded
     @POST("http://127.0.0.1:8080/device/opendoor")
     Call<Map<String,Object>> openDoor(@FieldMap Map<String,Object> params);

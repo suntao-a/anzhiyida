@@ -121,6 +121,7 @@ public class CameraPreview extends TextureView {
     private CameraCaptureSession mCaptureSession;
     private ImageReader mImageReader;
     private ImageReader mImagePreviewReader;
+    private ImageReader mImageIdCardCaptureReader;
     private Paint mPaint;
     private RectF mRectF = new RectF();
     private SurfaceHolder mSurfaceHolder;
@@ -250,7 +251,7 @@ public class CameraPreview extends TextureView {
             mPreviewRequestBuilder.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
                     CameraMetadata.STATISTICS_FACE_DETECT_MODE_FULL);
             // 我们创建一个 CameraCaptureSession 来进行相机预览
-            mCameraDevice.createCaptureSession(Arrays.asList(surface, mImageReader.getSurface(), mImagePreviewReader.getSurface()),
+            mCameraDevice.createCaptureSession(Arrays.asList(surface,mImageIdCardCaptureReader.getSurface(), mImageReader.getSurface(), mImagePreviewReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
@@ -547,6 +548,10 @@ public class CameraPreview extends TextureView {
                 mImageReader.close();
                 mImageReader = null;
             }
+            if (null != mImageIdCardCaptureReader) {
+                mImageIdCardCaptureReader.close();
+                mImageIdCardCaptureReader = null;
+            }
             if (null != mImagePreviewReader) {
                 mImagePreviewReader.close();
                 mImagePreviewReader = null;
@@ -640,12 +645,18 @@ public class CameraPreview extends TextureView {
                 cPixelSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);//获取成像尺寸，同上
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.JPEG, 1);
+
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
+
                 mImagePreviewReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.JPEG, 1);
                 mImagePreviewReader.setOnImageAvailableListener(
                         mOnImagePreViewAvailableListener, mBackgroundHandler);
+                mImageIdCardCaptureReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
+                        ImageFormat.JPEG, 1);
+                mImageIdCardCaptureReader.setOnImageAvailableListener(
+                        mOnIdCardCaptureAvailableListener, mBackgroundHandler);
                 int orientation = getResources().getConfiguration().orientation;
 //                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
 //                    setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
@@ -809,7 +820,43 @@ public class CameraPreview extends TextureView {
             e.printStackTrace();
         }
     }
+    /**
+     * 为idcard拍摄静态图片
+     */
+    public void idCardCapturePicture() {
+        try {
+            if (null == activity || null == mCameraDevice) {
+                return;
+            }
+            // 方向
+            int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+            final CaptureRequest.Builder captureBuilder =
+                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
+            captureBuilder.addTarget(mImageIdCardCaptureReader.getSurface());
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            setAutoFlash(captureBuilder);
 
+
+            CameraCaptureSession.CaptureCallback captureCallback
+                    = new CameraCaptureSession.CaptureCallback() {
+
+                @Override
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                                               @NonNull CaptureRequest request,
+                                               @NonNull TotalCaptureResult result) {
+                    Toast.makeText(getContext(), "Saved: " + mFile, Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, mFile.toString());
+                    unlockFocus();
+                }
+            };
+            mCaptureSession.stopRepeating();
+            mCaptureSession.capture(captureBuilder.build(), captureCallback, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * 运行preCapture序列来捕获静止图像
      */
@@ -894,6 +941,74 @@ public class CameraPreview extends TextureView {
                 }
                 mSubject.onNext(new CameraFaceData()
                         .setType(CameraFaceData.CAPTURE)
+                        .setFaceData(faceRGB)
+                        .setFeatureData(featureData)
+                        .setFaceDetectResult(faceDetectResult)
+                        .setImageHeight(height)
+                        .setImageWidth(width));
+            } catch (Exception e) {
+                Log.e(TAG, e.getMessage(), e);
+            }
+
+        }
+    };
+    /**
+     * ImageIdCardCaptureReader的回调对象
+     */
+    private final ImageReader.OnImageAvailableListener mOnIdCardCaptureAvailableListener
+            = new ImageReader.OnImageAvailableListener() {
+
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            try {
+
+//                File parent = new File(mPath);
+//                if(!parent.exists()){
+//                    parent.mkdir();
+//                }
+//                mFile = new File(mPath,UUID.randomUUID().toString().replace("-","")+".jpg");
+//                mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+                Image image = reader.acquireLatestImage();
+                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                image.close();
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                //旋转、镜像
+                Bitmap faceImg = null;
+                if (mPhotoAngle == 0 && !mMirror) {
+                    faceImg = bitmap;
+                } else {
+                    faceImg = Utils.rotaingImageView(bitmap, mPhotoAngle, mMirror);
+                }
+
+                int width = faceImg.getWidth();
+                int height = faceImg.getHeight();
+                byte[] faceRGB = Utils.bitmap2RGB(faceImg);
+                bitmap.recycle();
+                faceImg.recycle();
+                //识别
+                int ret = 0;
+                FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
+                int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
+                byte[] featureData = new byte[nFeatureSize];
+                ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
+                if (ret <= 0) {
+                    //检测人脸失败
+
+                    return;
+                }
+
+                ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
+                if (ret != 0) {
+                    //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
+                    return;
+                }
+                if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
+                    return;
+                }
+                mSubject.onNext(new CameraFaceData()
+                        .setType(CameraFaceData.IDCARD_CAPTURE)
                         .setFaceData(faceRGB)
                         .setFeatureData(featureData)
                         .setFaceDetectResult(faceDetectResult)
@@ -1054,6 +1169,7 @@ public class CameraPreview extends TextureView {
     public static class CameraFaceData {
         public final static int PREVIEW = 0;
         public final static int CAPTURE = 1;
+        public final static int IDCARD_CAPTURE = 2;
         private int type = PREVIEW;
         private byte[] mFeatureData;
         private byte[] mFaceData;
