@@ -184,17 +184,19 @@ public class SplashActivity extends ButterBaseActivity {
         return Observable.create(new ObservableOnSubscribe<RespBase>() {
             @Override
             public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
-
+                RespBase response = new RespBase();
+                response.setCode(200);
+                response.setMessage("mac获取...");
+                e.onNext(response);
                 String mac = "865315031703669";//PhoneInfoUtil.getIMEI(getApplication());
                 if (!TextUtils.isEmpty(mac)) {
                     AppInternal.getInstance().setIMEI(mac);
-                    RespBase response = new RespBase();
                     response.setCode(200);
-                    response.setMessage("mac获取地址成功...");
+                    response.setMessage("mac获取成功");
                     e.onNext(response);
                     e.onComplete();
                 } else {
-                    throw new ServerException(404, "mac地址获取失败...");
+                    throw new ServerException(404, "mac地址获取失败");
                 }
 
             }
@@ -205,11 +207,14 @@ public class SplashActivity extends ButterBaseActivity {
         return Observable.create(new ObservableOnSubscribe<RespBase>() {
             @Override
             public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
+                RespBase response = new RespBase();
+                response.setCode(200);
+                response.setMessage("IandosManager初始化...");
+                e.onNext(response);
                 AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
                 if (AppInternal.getInstance().getIandosManager() != null) {
-                    RespBase response = new RespBase();
                     response.setCode(200);
-                    response.setMessage("IandosManager初始化成功...");
+                    response.setMessage("IandosManager初始化成功");
                     e.onNext(response);
                     e.onComplete();
                 } else {
@@ -231,19 +236,22 @@ public class SplashActivity extends ButterBaseActivity {
                     e1.printStackTrace();
                 }
                 String str;
-                RespBase response = null;
+                RespBase response = new RespBase();
+                response.setCode(200);
+                response.setMessage("设备在线检测...");
+                e.onNext(response);
                 try {
                     response = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
                     if (response.isSuccess()) {
-                        response.setMessage("设备在线检测成功...");
+                        response.setMessage("设备在线检测成功");
                         e.onNext(response);
                         e.onComplete();
                     } else {
-                        throw new ServerException(response.getCode(), "设备ID:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                        throw new ServerException(response.getCode(), "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                     }
                 } catch (IOException e1) {
-                    throw new ServerException(404, e1.getMessage());
+                    throw new ServerException(404, "核验主机故障");
                 }
 
             }
@@ -254,8 +262,11 @@ public class SplashActivity extends ButterBaseActivity {
         return Observable.create(new ObservableOnSubscribe<RespBase>() {
             @Override
             public void subscribe(ObservableEmitter<RespBase> e) throws ServerException {
-                String str;
                 RespBase response = new RespBase();
+                response.setCode(200);
+                response.setMessage("NET-SDK启动...");
+                e.onNext(response);
+                String str;
                 if (bSdkInit == false) {
                     // 设置云授权信息,服务器IP地址需指定实际运行的云授权服务器地址
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理

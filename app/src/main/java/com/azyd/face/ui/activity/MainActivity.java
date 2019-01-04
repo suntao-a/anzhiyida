@@ -136,7 +136,7 @@ public class MainActivity extends ButterBaseActivity {
                                            flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                                            clFrame.setBackgroundResource(R.drawable.main_frame_error);
                                            ivService.setImageResource(R.drawable.icon_service_error);
-//                                           delayTimes = 5;
+                                           delayTimes = 5;
 //                                           Observable.interval(200, TimeUnit.MILLISECONDS).take(5)
 //                                                    .compose(new AsynTransformer())
 //                                                   .subscribe(new Consumer<Long>() {
