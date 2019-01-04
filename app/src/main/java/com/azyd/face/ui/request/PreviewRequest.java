@@ -6,20 +6,17 @@ import android.util.Log;
 
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
-import com.azyd.face.base.exception.ExceptionHandle;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
-import com.azyd.face.dispatcher.core.BaseRequest;
-import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.base.BaseRequest;
+import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.module.Compare1nReponse;
 import com.azyd.face.ui.module.PersonInfo;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.RequestParam;
 import com.idfacesdk.FACE_DETECT_RESULT;
-
-import java.util.Map;
 
 /**
  * @author suntao

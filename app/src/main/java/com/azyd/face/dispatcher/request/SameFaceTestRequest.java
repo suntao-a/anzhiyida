@@ -1,8 +1,8 @@
 package com.azyd.face.dispatcher.request;
 
 import com.azyd.face.base.RespBase;
-import com.azyd.face.dispatcher.core.BaseRequest;
-import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.base.BaseRequest;
+import com.azyd.face.dispatcher.base.FaceListManager;
 
 /**
  * @author suntao

@@ -4,9 +4,8 @@ import android.os.Process;
 import android.util.Log;
 
 import com.azyd.face.base.RespBase;
-import com.azyd.face.constant.CameraConstant;
-import com.azyd.face.dispatcher.core.BaseRequest;
-import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.base.BaseRequest;
+import com.azyd.face.dispatcher.base.FaceListManager;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -17,7 +16,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 
 /**

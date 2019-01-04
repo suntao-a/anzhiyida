@@ -5,17 +5,14 @@ import android.util.Log;
 
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
-import com.azyd.face.base.exception.ExceptionHandle;
-import com.azyd.face.base.exception.RespThrowable;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
-import com.azyd.face.dispatcher.core.BaseRequest;
-import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.base.BaseRequest;
+import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.RequestParam;
-import com.azyd.face.util.Utils;
 import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;
@@ -88,12 +85,12 @@ public class IDCardCaptureRequest extends BaseRequest {
             //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
             //检测人脸失败
             respBase.setCode(ErrorCode.WARING);
-            respBase.setMessage("身份证照检测人脸失败");
+            respBase.setMessage("证件照检测失败");
             return respBase;
         }
         if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
             respBase.setCode(ErrorCode.WARING);
-            respBase.setMessage("身份证照检测人脸失败");
+            respBase.setMessage("证件照检测失败");
             return respBase;
         }
         ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
@@ -121,7 +118,7 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("cardPhotoFeature",Base64.encode(featureData, Base64.DEFAULT))
 
                     .with("passType", PassType.ID_CARD)
-                    .with("passStatus", "0")//0：允许通行，1：禁止通行
+//                    .with("passStatus", "0")//0：允许通行，1：禁止通行
 
                     .with("verifyPhoto", Base64.encode(mFaceData, Base64.DEFAULT))
                     .with("verifyFeature", Base64.encode(mFeatureData, Base64.DEFAULT))

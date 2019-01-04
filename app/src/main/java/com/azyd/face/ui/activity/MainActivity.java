@@ -21,7 +21,7 @@ import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
-import com.azyd.face.dispatcher.core.FaceListManager;
+import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.ui.request.CapturePhotoRequest;
 import com.azyd.face.ui.request.IDCardCaptureRequest;
 import com.azyd.face.ui.request.PreviewRequest;
@@ -108,6 +108,7 @@ public class MainActivity extends ButterBaseActivity {
                 .subscribe(new Consumer<RespBase>() {
                                @Override
                                public void accept(RespBase result) {
+                                   int delayTimes = 3;
                                    switch (result.getCode()) {
                                        case ErrorCode.NORMAL:
                                        case ErrorCode.SUCCESS:
@@ -117,6 +118,7 @@ public class MainActivity extends ButterBaseActivity {
                                            flDialog.setBackgroundResource(R.drawable.main_dialog);
                                            clFrame.setBackgroundResource(R.drawable.main_frame);
                                            ivService.setImageResource(R.drawable.icon_service);
+                                           delayTimes = 3;
                                            break;
                                        case ErrorCode.WARING:
                                            tvResult.setTextColor(Color.YELLOW);
@@ -125,6 +127,7 @@ public class MainActivity extends ButterBaseActivity {
                                            flDialog.setBackgroundResource(R.drawable.main_dialog);
                                            clFrame.setBackgroundResource(R.drawable.main_frame);
                                            ivService.setImageResource(R.drawable.icon_service);
+                                           delayTimes = 5;
                                            break;
                                        case ErrorCode.SYSTEM_ERROR:
                                            tvResult.setTextColor(Color.YELLOW);
@@ -133,6 +136,33 @@ public class MainActivity extends ButterBaseActivity {
                                            flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                                            clFrame.setBackgroundResource(R.drawable.main_frame_error);
                                            ivService.setImageResource(R.drawable.icon_service_error);
+//                                           delayTimes = 5;
+//                                           Observable.interval(200, TimeUnit.MILLISECONDS).take(5)
+//                                                    .compose(new AsynTransformer())
+//                                                   .subscribe(new Consumer<Long>() {
+//                                                       @Override
+//                                                       public void accept(Long s) throws Exception {
+//                                                           if (s % 2 == 1) {
+//                                                               ivService.setImageResource(R.drawable.icon_service_error);
+//                                                               clFrame.setBackgroundResource(R.drawable.main_frame_error);
+//                                                               tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
+//                                                               tvName.setBackgroundResource(R.drawable.main_name_bg_error);
+//                                                               flDialog.setBackgroundResource(R.drawable.main_dialog_error);
+//                                                           } else {
+//                                                               ivService.setImageResource(R.drawable.icon_service);
+//                                                               clFrame.setBackgroundResource(R.drawable.main_frame);
+//                                                               tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+//                                                               tvName.setBackgroundResource(R.drawable.main_name_bg);
+//                                                               flDialog.setBackgroundResource(R.drawable.main_dialog);
+//                                                           }
+//
+//                                                       }
+//                                                   }, new Consumer<Throwable>() {
+//                                                       @Override
+//                                                       public void accept(Throwable throwable) throws Exception {
+//
+//                                                       }
+//                                                   });
                                            break;
                                        default:
                                            break;
@@ -147,7 +177,7 @@ public class MainActivity extends ButterBaseActivity {
                                        mDisposable.dispose();
                                    }
                                    mDisposable = Observable.just("")
-                                           .delay(3, TimeUnit.SECONDS)
+                                           .delay(delayTimes, TimeUnit.SECONDS)
                                            .compose(new AsynTransformer())
                                            .subscribe(new Consumer<String>() {
                                                @Override
@@ -233,7 +263,7 @@ public class MainActivity extends ButterBaseActivity {
             }
             if (msg.what == HandlerMsg.CONNECT_ERROR) {
                 //"连接失败";
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, "身份证读卡器故障"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM_ERROR, "身份证读卡器故障"));
             }
             if (msg.what == HandlerMsg.READ_ERROR) {
                 //cz();
@@ -243,7 +273,6 @@ public class MainActivity extends ButterBaseActivity {
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
                 MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
                 cameraView.takeIDCardPicture();
                 mCardInfoPublishSubject.onNext(ic);
 //                byte[] fp = new byte[1024];
@@ -330,7 +359,6 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     public void takePic() {
-        SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
         cameraView.takePicture();
     }
 

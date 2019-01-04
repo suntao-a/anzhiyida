@@ -6,7 +6,7 @@ import android.os.Environment;
 import com.azyd.face.app.AppContext;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
-import com.azyd.face.dispatcher.core.BaseRequest;
+import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.util.Utils;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;

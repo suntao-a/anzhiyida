@@ -1,4 +1,4 @@
-package com.azyd.face.dispatcher.core;
+package com.azyd.face.dispatcher.base;
 
 import com.azyd.face.app.AppContext;
 import com.azyd.face.constant.CameraConstant;
