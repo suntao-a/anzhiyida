@@ -2,11 +2,13 @@ package com.azyd.face.ui.request;
 
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.exception.ExceptionHandle;
 import com.azyd.face.constant.CameraConstant;
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
@@ -25,6 +27,7 @@ import java.util.Map;
  * $describe$
  */
 public class PreviewRequest extends BaseRequest {
+    private final String TAG="PreviewRequest";
     private byte[] mFeatureData;
     private byte[] mFaceData;
     private int width;
@@ -106,15 +109,15 @@ public class PreviewRequest extends BaseRequest {
                 //服务端没有，结束
 
                 FaceListManager.getInstance().put(mFeatureData);
-                RespBase respBase = new RespBase(200,"服务端没有此人信息");
+                RespBase respBase = new RespBase(ErrorCode.WARING,"服务端没有此人信息");
                 return respBase;
             }
 
 
 
         } catch (Exception e) {
-            RespBase respBase = new RespBase(200,ExceptionHandle.handleException(e).getMessage());
-            return respBase;
+            Log.e(TAG, "call: ", e);
+            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
         }
 
 

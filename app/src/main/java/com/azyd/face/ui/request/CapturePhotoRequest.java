@@ -1,11 +1,13 @@
 package com.azyd.face.ui.request;
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.exception.ExceptionHandle;
 import com.azyd.face.base.exception.RespThrowable;
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
@@ -20,6 +22,7 @@ import com.idfacesdk.FACE_DETECT_RESULT;
  * $describe$
  */
 public class CapturePhotoRequest extends BaseRequest {
+    private final String TAG="CapturePhotoRequest";
     private byte[] mFeatureData;
     private byte[] mFaceData;
     private int width;
@@ -77,8 +80,8 @@ public class CapturePhotoRequest extends BaseRequest {
 
 
         } catch (Exception e) {
-            RespThrowable throwable = ExceptionHandle.handleException(e);
-            return new RespBase(200,throwable.getMessage());
+            Log.e(TAG, "call: ", e);
+            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
         }
 
     }

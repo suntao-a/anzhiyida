@@ -18,6 +18,7 @@ public class CameraConstant {
         int getInterval();
         int getFeatureQualityPass();
         int getFaceSaveTimes();
+        int getVerifyThreshold_IDCARE();
     }
 
 
@@ -62,6 +63,11 @@ public class CameraConstant {
         public int getFaceSaveTimes() {
             return 6;
         }
+
+        @Override
+        public int getVerifyThreshold_IDCARE() {
+            return 60;
+        }
     }
     public static class DefaultDeviceCamera implements ICameraParam{
 
@@ -98,6 +104,11 @@ public class CameraConstant {
         @Override
         public int getFaceSaveTimes() {
             return 6;
+        }
+
+        @Override
+        public int getVerifyThreshold_IDCARE() {
+            return 60;
         }
     }
 }

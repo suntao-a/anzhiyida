@@ -1,12 +1,14 @@
 package com.azyd.face.ui.request;
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.exception.ExceptionHandle;
 import com.azyd.face.base.exception.RespThrowable;
 import com.azyd.face.constant.CameraConstant;
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.core.BaseRequest;
 import com.azyd.face.net.ServiceGenerator;
@@ -25,6 +27,7 @@ import java.text.SimpleDateFormat;
  * $describe$
  */
 public class IDCardCaptureRequest extends BaseRequest {
+    private final String TAG="IDCardCaptureRequest";
     static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");// 设置日期格式
     private byte[] mFeatureData;
     private byte[] mFaceData;
@@ -77,7 +80,7 @@ public class IDCardCaptureRequest extends BaseRequest {
         ret = IdFaceSdk.IdFaceSdkDetectFace(captureRGB, width, height, faceDetectResult);
         if (ret <= 0) {
             //检测人脸失败
-            respBase.setCode(200);
+            respBase.setCode(ErrorCode.WARING);
             respBase.setMessage("身份证照检测人脸失败");
             return respBase;
         }
@@ -86,19 +89,19 @@ public class IDCardCaptureRequest extends BaseRequest {
         if (ret != 0) {
             //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
             //检测人脸失败
-            respBase.setCode(200);
+            respBase.setCode(ErrorCode.WARING);
             respBase.setMessage("身份证照检测人脸失败");
             return respBase;
         }
         if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
-            respBase.setCode(200);
+            respBase.setCode(ErrorCode.WARING);
             respBase.setMessage("身份证照检测人脸失败");
             return respBase;
         }
         ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
-        if(ret>= CameraConstant.getCameraParam().getFeatureQualityPass()){
-            respBase.setCode(200);
-            respBase.setMessage("身份证照和摄像头获取的人脸比对失败，请换个姿势再来一次");
+        if(ret>= CameraConstant.getCameraParam().getVerifyThreshold_IDCARE()){
+            respBase.setCode(ErrorCode.WARING);
+            respBase.setMessage("您的证件和本人不符");
             return respBase;
         }
 
@@ -135,8 +138,8 @@ public class IDCardCaptureRequest extends BaseRequest {
 
 
         } catch (Exception e) {
-            RespThrowable throwable = ExceptionHandle.handleException(e);
-            return new RespBase(200,throwable.getMessage());
+            Log.e(TAG, "call: ", e);
+            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
         }
 
     }

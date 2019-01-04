@@ -60,7 +60,7 @@ public class HXCardReadManager {
                         public void accept(Long aLong) throws Exception {
                             if (mHsOtgApi.Authenticate(200, 200) != 1) {
                                 msg = Message.obtain();
-                                msg.what = HandlerMsg.READ_ERROR;
+                                msg.what = HandlerMsg.Authenticate_ERROR;
                                 mHandler.sendMessage(msg);
                             } else {
                                 ici = new MyHSIDCardInfo();
@@ -93,7 +93,9 @@ public class HXCardReadManager {
                     });
 
         } else {
-            //statu.setText("连接失败");
+            msg = Message.obtain();
+            msg.what = HandlerMsg.CONNECT_ERROR;
+            mHandler.sendMessage(msg);
         }
     }
     public void close(){

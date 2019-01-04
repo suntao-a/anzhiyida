@@ -13,6 +13,7 @@ import com.azyd.face.R;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.rxjava.AsynTransformer;
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.core.FaceListManager;
@@ -89,6 +90,9 @@ public class MainActivity extends ButterBaseActivity {
                 .subscribe(new Consumer<RespBase>() {
                                @Override
                                public void accept(RespBase result) {
+                                   if(result.getCode()==ErrorCode.NORMAL){
+                                       tvResult.setTextColor();
+                                   }
                                    if(!TextUtils.isEmpty(result.getMessage())){
                                        tvResult.setText(result.getMessage());
                                    }
@@ -96,13 +100,13 @@ public class MainActivity extends ButterBaseActivity {
                                    if (mDisposable != null && !mDisposable.isDisposed()) {
                                        mDisposable.dispose();
                                    }
-                                   mDisposable = Observable.just("欢迎使用")
+                                   mDisposable = Observable.just("")
                                            .delay(3, TimeUnit.SECONDS)
                                            .compose(new AsynTransformer())
                                            .subscribe(new Consumer<String>() {
                                                @Override
                                                public void accept(String s) throws Exception {
-                                                   tvResult.setText(s);
+                                                   SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.NORMAL,"欢迎使用"));
                                                }
                                            });
                                }
@@ -183,16 +187,18 @@ public class MainActivity extends ButterBaseActivity {
             }
             if (msg.what == HandlerMsg.CONNECT_ERROR) {
                 //"连接失败";
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"身份证读卡器故障"));
             }
             if (msg.what == HandlerMsg.READ_ERROR) {
                 //cz();
                 //"卡认证失败"
-
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"卡认证失败"));
             }
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
                 MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
-                cameraView.idCardCapturePicture();
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,getResources().getString(R.string.please_see_camera)));
+                cameraView.takeIDCardPicture();
                 mCardInfoPublishSubject.onNext(ic);
 //                byte[] fp = new byte[1024];
 //                fp = ic.getFpDate();
@@ -247,7 +253,7 @@ public class MainActivity extends ButterBaseActivity {
             }
         }
 
-        ;
+
     };
 
     @Override
@@ -278,6 +284,7 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     public void takePic() {
+        SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,getResources().getString(R.string.please_see_camera)));
         cameraView.takePicture();
     }
 

@@ -51,6 +51,7 @@ import com.azyd.face.app.AppContext;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.dispatcher.core.FaceListManager;
 import com.azyd.face.dispatcher.SingleDispatcher;
@@ -187,7 +188,8 @@ public class CameraPreview extends TextureView {
         CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"摄像机被占用"));
+                return;
             }
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -694,10 +696,9 @@ public class CameraPreview extends TextureView {
                 mCameraId = cameraId;
                 return;
             }
-        } catch (CameraAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (NullPointerException e) {
-            Log.e(TAG, "设备不支持Camera2");
+            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"摄像机故障"));
         }
     }
 
@@ -826,7 +827,7 @@ public class CameraPreview extends TextureView {
     /**
      * 为idcard拍摄静态图片
      */
-    public void idCardCapturePicture() {
+    public void takeIDCardPicture() {
         try {
             if (null == activity || null == mCameraDevice) {
                 return;

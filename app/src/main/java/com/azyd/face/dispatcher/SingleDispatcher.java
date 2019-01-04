@@ -37,7 +37,7 @@ public class SingleDispatcher extends Thread {
     private BaseRequest mCurrentRequest;
     private Future<RespBase> mCurrentfuture;
     private ThreadPoolExecutor mExecutor;
-    public Observable<RespBase> getObservable(){
+    public PublishSubject<RespBase> getObservable(){
         return mSubject;
     }
     public static SingleDispatcher getInstance(){
