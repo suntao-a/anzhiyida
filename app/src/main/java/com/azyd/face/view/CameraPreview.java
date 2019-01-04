@@ -850,8 +850,6 @@ public class CameraPreview extends TextureView {
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    Toast.makeText(getContext(), "Saved: " + mFile, Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, mFile.toString());
                     unlockFocus();
                 }
             };
@@ -921,8 +919,12 @@ public class CameraPreview extends TextureView {
                 int width = faceImg.getWidth();
                 int height = faceImg.getHeight();
                 byte[] faceRGB = Utils.bitmap2RGB(faceImg);
-                bitmap.recycle();
-                faceImg.recycle();
+                if(!bitmap.isRecycled()){
+                    bitmap.recycle();
+                }
+                if(!faceImg.isRecycled()){
+                    faceImg.recycle();
+                }
                 //识别
                 int ret = 0;
                 FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
@@ -966,12 +968,6 @@ public class CameraPreview extends TextureView {
         public void onImageAvailable(ImageReader reader) {
             try {
 
-//                File parent = new File(mPath);
-//                if(!parent.exists()){
-//                    parent.mkdir();
-//                }
-//                mFile = new File(mPath,UUID.randomUUID().toString().replace("-","")+".jpg");
-//                mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
                 Image image = reader.acquireLatestImage();
                 ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[buffer.remaining()];
@@ -985,12 +981,16 @@ public class CameraPreview extends TextureView {
                 } else {
                     faceImg = Utils.rotaingImageView(bitmap, mPhotoAngle, mMirror);
                 }
-
                 int width = faceImg.getWidth();
                 int height = faceImg.getHeight();
                 byte[] faceRGB = Utils.bitmap2RGB(faceImg);
-                bitmap.recycle();
-                faceImg.recycle();
+
+                if(!bitmap.isRecycled()){
+                    bitmap.recycle();
+                }
+                if(!faceImg.isRecycled()){
+                    faceImg.recycle();
+                }
                 //识别
                 int ret = 0;
                 FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
@@ -1151,8 +1151,12 @@ public class CameraPreview extends TextureView {
                                     int width = faceImg.getWidth();
                                     int height = faceImg.getHeight();
                                     byte[] faceRGB = Utils.bitmap2RGB(faceImg);
-                                    bitmap.recycle();
-                                    faceImg.recycle();
+                                    if(!bitmap.isRecycled()){
+                                        bitmap.recycle();
+                                    }
+                                    if(!faceImg.isRecycled()){
+                                        faceImg.recycle();
+                                    }
                                     //识别
                                     int ret = 0;
                                     FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();

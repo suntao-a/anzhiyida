@@ -11,6 +11,7 @@ import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.core.BaseRequest;
+import com.azyd.face.dispatcher.core.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.RequestParam;
@@ -67,17 +68,14 @@ public class IDCardCaptureRequest extends BaseRequest {
 
     @Override
     public RespBase call() {
+
         RespBase respBase  = new RespBase();
-        int width = mMyHSIDCardInfo.getFaceBmp().getWidth();
-        int height = mMyHSIDCardInfo.getFaceBmp().getHeight();
-        byte[] captureRGB = Utils.bitmap2RGB(mMyHSIDCardInfo.getFaceBmp());
-        mMyHSIDCardInfo.getFaceBmp().recycle();
 //识别
         int ret = 0;
         FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
         int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
         byte[] featureData = new byte[nFeatureSize];
-        ret = IdFaceSdk.IdFaceSdkDetectFace(captureRGB, width, height, faceDetectResult);
+        ret = IdFaceSdk.IdFaceSdkDetectFace(mMyHSIDCardInfo.getFaceBmp(), mMyHSIDCardInfo.getWidth(), mMyHSIDCardInfo.getHeight(), faceDetectResult);
         if (ret <= 0) {
             //检测人脸失败
             respBase.setCode(ErrorCode.WARING);
@@ -85,7 +83,7 @@ public class IDCardCaptureRequest extends BaseRequest {
             return respBase;
         }
 
-        ret = IdFaceSdk.IdFaceSdkFeatureGet(captureRGB, width, height, faceDetectResult, featureData);
+        ret = IdFaceSdk.IdFaceSdkFeatureGet(mMyHSIDCardInfo.getFaceBmp(), mMyHSIDCardInfo.getWidth(), mMyHSIDCardInfo.getHeight(), faceDetectResult, featureData);
         if (ret != 0) {
             //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];
             //检测人脸失败
@@ -99,7 +97,8 @@ public class IDCardCaptureRequest extends BaseRequest {
             return respBase;
         }
         ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
-        if(ret>= CameraConstant.getCameraParam().getVerifyThreshold_IDCARE()){
+
+        if(ret < CameraConstant.getCameraParam().getVerifyThreshold_IDCARE()){
             respBase.setCode(ErrorCode.WARING);
             respBase.setMessage("您的证件和本人不符");
             return respBase;
@@ -117,7 +116,7 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("cardDepart",mMyHSIDCardInfo.getDepartment())
                     .with("cardDayFrom",mMyHSIDCardInfo.getStrartDate())
                     .with("cardDayTo",mMyHSIDCardInfo.getEndDate())
-                    .with("cardPhoto",Base64.encode(captureRGB, Base64.DEFAULT))
+                    .with("cardPhoto",Base64.encode(mMyHSIDCardInfo.getFaceBmp(), Base64.DEFAULT))
                     .with("cardPhotoFeature",Base64.encode(featureData, Base64.DEFAULT))
                     .with("cardPhotoFeature",Base64.encode(featureData, Base64.DEFAULT))
 
@@ -140,6 +139,8 @@ public class IDCardCaptureRequest extends BaseRequest {
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
             return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+        }finally {
+            FaceListManager.getInstance().put(mFeatureData);
         }
 
     }

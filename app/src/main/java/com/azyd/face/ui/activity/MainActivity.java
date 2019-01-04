@@ -1,11 +1,16 @@
 package com.azyd.face.ui.activity;
 
+import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
@@ -41,7 +46,10 @@ import io.reactivex.subjects.PublishSubject;
 @Route(path = RoutePath.MAIN)
 public class MainActivity extends ButterBaseActivity {
 
-
+    @BindView(R.id.iv_service)
+    ImageView ivService;
+    @BindView(R.id.cl_frame)
+    ConstraintLayout clFrame;
     @BindView(R.id.cameraView)
     CameraPreview cameraView;
     @BindView(R.id.surfaceview)
@@ -50,12 +58,15 @@ public class MainActivity extends ButterBaseActivity {
     TextView tvName;
     @BindView(R.id.tv_result)
     TextView tvResult;
+    @BindView(R.id.fl_dialog)
+    FrameLayout flDialog;
     @BindView(R.id.btn_custom)
     TextView btnCustom;
     Disposable mDisposable;
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
+
     @Override
     protected void beforeSetContent() {
         AppCompat.setFullWindow(getWindow());
@@ -76,24 +87,59 @@ public class MainActivity extends ButterBaseActivity {
         cameraView.setSurfaceView(surfaceview);
     }
 
+    @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
         mCardInfoPublishSubject = PublishSubject.create();
         mCapturePublishSubject = PublishSubject.create();
         //启动身份证读卡器
-        mHxCardReadManager = new HXCardReadManager(h,this);
+        mHxCardReadManager = new HXCardReadManager(h, this);
         mHxCardReadManager.start();
         //启动单任务执行中心
-        SingleDispatcher.getInstance().start();
+        try {
+            SingleDispatcher.getInstance().start();
+        } catch (Exception e) {
+
+        }
+
+
         SingleDispatcher.getInstance().getObservable()
                 .compose(new AsynTransformer())
                 .subscribe(new Consumer<RespBase>() {
                                @Override
                                public void accept(RespBase result) {
-                                   if(result.getCode()==ErrorCode.NORMAL){
-                                       tvResult.setTextColor();
+                                   switch (result.getCode()) {
+                                       case ErrorCode.NORMAL:
+                                       case ErrorCode.SUCCESS:
+                                           tvResult.setTextColor(Color.WHITE);
+                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                                           tvName.setBackgroundResource(R.drawable.main_name_bg);
+                                           flDialog.setBackgroundResource(R.drawable.main_dialog);
+                                           clFrame.setBackgroundResource(R.drawable.main_frame);
+                                           ivService.setImageResource(R.drawable.icon_service);
+                                           break;
+                                       case ErrorCode.WARING:
+                                           tvResult.setTextColor(Color.YELLOW);
+                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                                           tvName.setBackgroundResource(R.drawable.main_name_bg);
+                                           flDialog.setBackgroundResource(R.drawable.main_dialog);
+                                           clFrame.setBackgroundResource(R.drawable.main_frame);
+                                           ivService.setImageResource(R.drawable.icon_service);
+                                           break;
+                                       case ErrorCode.SYSTEM_ERROR:
+                                           tvResult.setTextColor(Color.YELLOW);
+                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
+                                           tvName.setBackgroundResource(R.drawable.main_name_bg_error);
+                                           flDialog.setBackgroundResource(R.drawable.main_dialog_error);
+                                           clFrame.setBackgroundResource(R.drawable.main_frame_error);
+                                           ivService.setImageResource(R.drawable.icon_service_error);
+                                           break;
+                                       default:
+                                           break;
+
                                    }
-                                   if(!TextUtils.isEmpty(result.getMessage())){
+
+                                   if (!TextUtils.isEmpty(result.getMessage())) {
                                        tvResult.setText(result.getMessage());
                                    }
 
@@ -106,7 +152,7 @@ public class MainActivity extends ButterBaseActivity {
                                            .subscribe(new Consumer<String>() {
                                                @Override
                                                public void accept(String s) throws Exception {
-                                                   SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.NORMAL,"欢迎使用"));
+                                                   SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.NORMAL, "欢迎使用"));
                                                }
                                            });
                                }
@@ -155,13 +201,13 @@ public class MainActivity extends ButterBaseActivity {
         Observable.combineLatest(mCardInfoPublishSubject, mCapturePublishSubject, new BiFunction<MyHSIDCardInfo, CameraPreview.CameraFaceData, Boolean>() {
             @Override
             public Boolean apply(MyHSIDCardInfo myHSIDCardInfo, CameraPreview.CameraFaceData cameraFaceData) throws Exception {
-                if(myHSIDCardInfo!=null&&cameraFaceData!=null){
+                if (myHSIDCardInfo != null && cameraFaceData != null) {
                     IDCardCaptureRequest request = new IDCardCaptureRequest();
                     request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
                             .setFeatureData(cameraFaceData.getFeatureData())
                             .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
                             .setFaceData(cameraFaceData.getFaceData())
-                    .setHSIDCardInfo(myHSIDCardInfo);
+                            .setHSIDCardInfo(myHSIDCardInfo);
                     SingleDispatcher.getInstance().add(request);
                 }
                 return true;
@@ -187,17 +233,17 @@ public class MainActivity extends ButterBaseActivity {
             }
             if (msg.what == HandlerMsg.CONNECT_ERROR) {
                 //"连接失败";
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"身份证读卡器故障"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, "身份证读卡器故障"));
             }
             if (msg.what == HandlerMsg.READ_ERROR) {
                 //cz();
                 //"卡认证失败"
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,"卡认证失败"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, "卡认证失败"));
             }
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
                 MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,getResources().getString(R.string.please_see_camera)));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
                 cameraView.takeIDCardPicture();
                 mCardInfoPublishSubject.onNext(ic);
 //                byte[] fp = new byte[1024];
@@ -284,13 +330,16 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     public void takePic() {
-        SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM,getResources().getString(R.string.please_see_camera)));
+        SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
         cameraView.takePicture();
     }
 
 
     @Override
     public void onDestroy() {
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+        }
         cameraView.onDestroy();
         mHxCardReadManager.close();
         FaceListManager.getInstance().onDestory();

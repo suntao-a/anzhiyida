@@ -9,6 +9,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.azyd.face.base.rxjava.AsynTransformer;
+import com.azyd.face.util.Utils;
 import com.huashi.otg.sdk.HSIDCardInfo;
 import com.huashi.otg.sdk.HandlerMsg;
 import com.huashi.otg.sdk.HsOtgApi;
@@ -44,6 +45,10 @@ public class HXCardReadManager {
         mHandler = handler;
         mContext = context;
         mHsOtgApi = new HsOtgApi(mHandler, mContext);
+        File file = new File(filepath);
+        if(!file.exists()){
+            file.mkdir();
+        }
     }
 
     public void start() {
@@ -74,8 +79,12 @@ public class HXCardReadManager {
                                         } else {
                                             FileInputStream fis = new FileInputStream(filepath + "/zp.bmp");
                                             Bitmap bmp = BitmapFactory.decodeStream(fis);
-                                            ici.setFaceBmp(bmp);
+                                            byte[] faceRGB = Utils.bitmap2RGB(bmp);
+                                            ici.setFaceBmp(faceRGB)
+                                                    .setWidth(bmp.getWidth())
+                                                    .setHeight(bmp.getHeight());
                                             fis.close();
+                                            bmp.recycle();
                                             msg = Message.obtain();
                                             msg.obj = ici;
                                             msg.what = HandlerMsg.READ_SUCCESS;
