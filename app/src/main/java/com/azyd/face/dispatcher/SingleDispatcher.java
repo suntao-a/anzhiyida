@@ -69,20 +69,20 @@ public class SingleDispatcher extends Thread {
         if (!isBusy) {
             //没有任务再执行，就加入新任务
             mPriorityQueue.offer(request);
-            Log.e(TAG, "add成功");
+            Log.e(TAG, "add成功："+request.getPriority());
         } else {
             if (mCurrentRequest != null) {
                 try {
                     if (mCurrentRequest.getPriority() >= request.getPriority()) {
                         //新加的优先级底，不处理
-                        Log.e(TAG, "add拒绝");
+                        Log.e(TAG, "add拒绝："+request.getPriority());
                         return;
                     } else {
                         //新加的优先级高于正在执行的，则取消正在执行的，并加入
                         mCurrentfuture.cancel(true);
                         mPriorityQueue.clear();
                         mPriorityQueue.offer(request);
-                        Log.e(TAG, "add替换成功");
+                        Log.e(TAG, "add替换成功："+request.getPriority());
                     }
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
@@ -116,7 +116,10 @@ public class SingleDispatcher extends Thread {
             try {
                 mCurrentfuture = mExecutor.submit(mCurrentRequest);
                 RespBase result = mCurrentfuture.get();
-                mSubject.onNext(result);
+                if(result!=null){
+                    mSubject.onNext(result);
+                }
+
             } catch (CancellationException e) {
                 Log.e(TAG, "被取消");
             } catch (Exception e) {

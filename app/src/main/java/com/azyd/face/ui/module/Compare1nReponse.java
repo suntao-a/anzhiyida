@@ -21,7 +21,7 @@ public class Compare1nReponse extends RespBase implements IProguardKeeper {
         this.content = content;
     }
 
-    public class Content{
+    public class Content implements IProguardKeeper {
         List<PersonInfo> personInfo;
         String suspectedScore;
         String confirmScore;

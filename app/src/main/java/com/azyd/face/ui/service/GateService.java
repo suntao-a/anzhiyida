@@ -11,6 +11,7 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.Headers;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
@@ -31,7 +32,7 @@ public interface GateService {
 
     @POST(URL.PASS_RECORD_NOCARD)
     Call<RespBase> passRecordNoCard(@Body Map<String, Object> params);
-
+//    @Headers("Cache-Control: max-age=560000")
     @POST(URL.PASS_RECORD_IDCARD)
     Call<RespBase> passRecordIDCard(@Body Map<String, Object> params);
 

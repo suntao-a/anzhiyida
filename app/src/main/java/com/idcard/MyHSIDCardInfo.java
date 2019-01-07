@@ -2,6 +2,7 @@ package com.idcard;
 
 import android.graphics.Bitmap;
 
+import com.azyd.face.base.IProguardKeeper;
 import com.huashi.otg.sdk.HSIDCardInfo;
 
 /**
@@ -9,7 +10,7 @@ import com.huashi.otg.sdk.HSIDCardInfo;
  * @creat-time 2019/1/3 on 16:15
  * $describe$
  */
-public class MyHSIDCardInfo extends HSIDCardInfo {
+public class MyHSIDCardInfo extends HSIDCardInfo implements IProguardKeeper {
     byte[] faceBmp;
     int width;
     int height;

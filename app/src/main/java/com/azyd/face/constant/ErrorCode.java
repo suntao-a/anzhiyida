@@ -11,4 +11,5 @@ public class ErrorCode {
     public static final int SUCCESS=200;
     public static final int NORMAL=100;
     public static final int WARING=101;
+    public static final int NO_THING=99;
 }

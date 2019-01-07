@@ -4,7 +4,10 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.Matrix;
+import android.util.Base64;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -12,7 +15,7 @@ import java.nio.ByteBuffer;
  * @creat-time 2018/11/28 on 15:39
  * $describe$
  */
-public class Utils {
+public class ImageUtils {
 
     public static Bitmap rotaingImageView(Bitmap bitmap, int angle,boolean mirror) {
         //旋转图片 动作
@@ -33,27 +36,37 @@ public class Utils {
      * @方法描述 Bitmap转RGB
      */
     public static byte[] bitmap2RGB(Bitmap bitmap) {
-        int bytes = bitmap.getByteCount();  //返回可用于储存此位图像素的最小字节数
+        try{
+            int bytes = bitmap.getByteCount();  //返回可用于储存此位图像素的最小字节数
 
-        ByteBuffer buffer = ByteBuffer.allocate(bytes); //  使用allocate()静态方法创建字节缓冲区
-        bitmap.copyPixelsToBuffer(buffer); // 将位图的像素复制到指定的缓冲区
+            ByteBuffer buffer = ByteBuffer.allocate(bytes); //  使用allocate()静态方法创建字节缓冲区
+            bitmap.copyPixelsToBuffer(buffer); // 将位图的像素复制到指定的缓冲区
 
-        byte[] rgba = buffer.array();
-        byte[] pixels = new byte[(rgba.length / 4) * 3];
+            byte[] rgba = buffer.array();
+            buffer.clear();
+            byte[] pixels = new byte[(rgba.length / 4) * 3];
 
-        int count = rgba.length / 4;
+            int count = rgba.length / 4;
 
-        //Bitmap像素点的色彩通道排列顺序是RGBA
-        for (int i = 0; i < count; i++) {
+            //Bitmap像素点的色彩通道排列顺序是RGBA
+            for (int i = 0; i < count; i++) {
 
-            pixels[i * 3] = rgba[i * 4];        //R
-            pixels[i * 3 + 1] = rgba[i * 4 + 1];    //G
-            pixels[i * 3 + 2] = rgba[i * 4 + 2];       //B
+                pixels[i * 3] = rgba[i * 4];        //R
+                pixels[i * 3 + 1] = rgba[i * 4 + 1];    //G
+                pixels[i * 3 + 2] = rgba[i * 4 + 2];       //B
 
+            }
+
+
+            rgba=null;
+            return pixels;
+        } catch (Exception e){
+
+            return null;
         }
-        rgba=null;
-        return pixels;
+
     }
+
     /**
      * @方法描述 Bitmap转RGB
      */
@@ -88,7 +101,7 @@ public class Utils {
         }
 
         Bitmap bmp = Bitmap.createBitmap(colors, 0, width, width, height,
-                Bitmap.Config.ARGB_8888);
+                Bitmap.Config.RGB_565);
         return bmp;
     }
 
@@ -142,5 +155,15 @@ public class Utils {
 
         return color;
     }
-
+    public static String Bitmap2StrByBase64(Bitmap bit){
+        ByteArrayOutputStream bos=new ByteArrayOutputStream();
+        bit.compress(Bitmap.CompressFormat.JPEG, 70, bos);//参数100表示不压缩
+        byte[] bytes=bos.toByteArray();
+        try {
+            bos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return Base64.encodeToString(bytes, Base64.DEFAULT);
+    }
 }

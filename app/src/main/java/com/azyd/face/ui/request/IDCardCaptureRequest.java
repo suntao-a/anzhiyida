@@ -1,5 +1,6 @@
 package com.azyd.face.ui.request;
 
+import android.graphics.Bitmap;
 import android.util.Base64;
 import android.util.Log;
 
@@ -12,7 +13,9 @@ import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
+import com.azyd.face.util.DateFormatUtils;
 import com.azyd.face.util.RequestParam;
+import com.azyd.face.util.ImageUtils;
 import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;
@@ -26,7 +29,7 @@ import java.text.SimpleDateFormat;
  */
 public class IDCardCaptureRequest extends BaseRequest {
     private final String TAG="IDCardCaptureRequest";
-    static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");// 设置日期格式
+    static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");// 设置日期格式
     private byte[] mFeatureData;
     private byte[] mFaceData;
     private int width;
@@ -102,6 +105,14 @@ public class IDCardCaptureRequest extends BaseRequest {
         }
 
         try {
+            Bitmap cardface = ImageUtils.rgb2Bitmap(mMyHSIDCardInfo.getFaceBmp(),mMyHSIDCardInfo.getWidth(),mMyHSIDCardInfo.getHeight());
+            String cardfacebase64 = ImageUtils.Bitmap2StrByBase64(cardface);
+            cardface.recycle();
+            cardface=null;
+            Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData,width,height);
+            String detectfacebase64 = ImageUtils.Bitmap2StrByBase64(detectface);
+            detectface.recycle();
+            detectface=null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
             RespBase response = gateService.passRecordIDCard(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                     .with("personName",mMyHSIDCardInfo.getPeopleName())
@@ -111,18 +122,18 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("personAddress",mMyHSIDCardInfo.getAddr())
                     .with("cardNum",mMyHSIDCardInfo.getIDCard())
                     .with("cardDepart",mMyHSIDCardInfo.getDepartment())
-                    .with("cardDayFrom",mMyHSIDCardInfo.getStrartDate())
-                    .with("cardDayTo",mMyHSIDCardInfo.getEndDate())
-                    .with("cardPhoto",Base64.encode(mMyHSIDCardInfo.getFaceBmp(), Base64.DEFAULT))
-                    .with("cardPhotoFeature",Base64.encode(featureData, Base64.DEFAULT))
-                    .with("cardPhotoFeature",Base64.encode(featureData, Base64.DEFAULT))
+                    .with("cardDayFrom",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getStrartDate(),"yyyy.MM.dd","yyyyMMdd"))
+                    .with("cardDayTo",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getEndDate(),"yyyy.MM.dd","yyyyMMdd"))
+
+                    .with("cardPhoto",cardfacebase64)
+                    .with("cardPhotoFeature",Base64.encodeToString(featureData, Base64.DEFAULT))
+                    .with("cardPhotoFeature",Base64.encodeToString(featureData, Base64.DEFAULT))
 
                     .with("passType", PassType.ID_CARD)
-//                    .with("passStatus", "0")//0：允许通行，1：禁止通行
 
-                    .with("verifyPhoto", Base64.encode(mFaceData, Base64.DEFAULT))
-                    .with("verifyFeature", Base64.encode(mFeatureData, Base64.DEFAULT))
-                    .with("verifyThreshold", CameraConstant.getCameraParam().getFeatureQualityPass())
+                    .with("verifyPhoto", detectfacebase64)
+                    .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
+                    .with("verifyThreshold", CameraConstant.getCameraParam().getVerifyThreshold_IDCARE())
                     .with("verifyScore", ret)
 
                     .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
@@ -130,7 +141,12 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                     .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                     .create()).execute().body();
-            return response;
+            if(response!=null){
+                return response;
+            } else {
+                return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+            }
+
 
 
         } catch (Exception e) {
@@ -138,6 +154,7 @@ public class IDCardCaptureRequest extends BaseRequest {
             return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
         }finally {
             FaceListManager.getInstance().put(mFeatureData);
+            System.gc();
         }
 
     }

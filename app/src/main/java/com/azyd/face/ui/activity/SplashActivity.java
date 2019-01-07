@@ -59,6 +59,7 @@ import io.reactivex.functions.Consumer;
 @Route(path = RoutePath.SPLASH)
 public class SplashActivity extends ButterBaseActivity {
     Disposable disposable2;
+    Disposable disposable1;
     @BindView(R.id.tv_process)
     TextView tvProcess;
     @BindView(R.id.image_back)
@@ -135,6 +136,12 @@ public class SplashActivity extends ButterBaseActivity {
 
     @Override
     public void onBackPressed() {
+        if(disposable1!=null&&!disposable1.isDisposed()){
+            disposable1.dispose();
+        }
+        if(disposable2!=null&&!disposable2.isDisposed()){
+            disposable2.dispose();
+        }
         if (bSdkInit) {
             bSdkInit = false;
             IdFaceSdk.IdFaceSdkUninit();
@@ -146,6 +153,10 @@ public class SplashActivity extends ButterBaseActivity {
         Observable.concat(createInitMac(),createInitIandosManager(), createCheckMac(), createStartSDK())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable1 = d;
+                    }
                     @Override
                     public void onError(RespThrowable responeThrowable) {
                         tvProcess.setText(responeThrowable.getMessage());
@@ -323,6 +334,12 @@ public class SplashActivity extends ButterBaseActivity {
 
 
         } else {
+            if(disposable1!=null&&!disposable1.isDisposed()){
+                disposable1.dispose();
+            }
+            if(disposable2!=null&&!disposable2.isDisposed()){
+                disposable2.dispose();
+            }
             count = 0;
             View view = getLayoutInflater().inflate(R.layout.dialog_view, null);
             final EditText editText = (EditText) view.findViewById(R.id.et_ip);

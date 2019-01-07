@@ -1,5 +1,6 @@
 package com.azyd.face.ui.request;
 
+import android.graphics.Bitmap;
 import android.util.Base64;
 import android.util.Log;
 
@@ -10,6 +11,7 @@ import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
+import com.azyd.face.util.ImageUtils;
 import com.azyd.face.util.RequestParam;
 import com.idfacesdk.FACE_DETECT_RESULT;
 
@@ -63,22 +65,32 @@ public class CapturePhotoRequest extends BaseRequest {
 //        }
         //没有,就和服务端通信比对
         try {
+            Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData,width,height);
+            String detectfacebase64 = ImageUtils.Bitmap2StrByBase64(detectface);
+            detectface.recycle();
+            detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
             RespBase response = gateService.passRecordNoCard(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                     .with("passType", PassType.DYNAMIC_NORMAL)
-                    .with("verifyPhoto", Base64.encode(mFaceData, Base64.DEFAULT))
-                    .with("verifyFeature", Base64.encode(mFeatureData, Base64.DEFAULT))
+                    .with("verifyPhoto", detectfacebase64)
+                    .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                     .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
                     .with("passPicFaceY", mFaceDetectResult.nFaceTop / (float) height)
                     .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                     .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                     .create()).execute().body();
-            return response;
+            if(response!=null){
+                return response;
+            } else {
+                return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+            }
 
 
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
             return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+        } finally {
+            System.gc();
         }
 
     }

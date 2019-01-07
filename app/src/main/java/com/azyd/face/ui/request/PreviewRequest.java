@@ -1,6 +1,7 @@
 package com.azyd.face.ui.request;
 
 
+import android.graphics.Bitmap;
 import android.util.Base64;
 import android.util.Log;
 
@@ -15,6 +16,7 @@ import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.module.Compare1nReponse;
 import com.azyd.face.ui.module.PersonInfo;
 import com.azyd.face.ui.service.GateService;
+import com.azyd.face.util.ImageUtils;
 import com.azyd.face.util.RequestParam;
 import com.idfacesdk.FACE_DETECT_RESULT;
 
@@ -29,7 +31,6 @@ public class PreviewRequest extends BaseRequest {
     private byte[] mFaceData;
     private int width;
     private int height;
-
     private FACE_DETECT_RESULT mFaceDetectResult;
 
     public PreviewRequest() {
@@ -60,15 +61,20 @@ public class PreviewRequest extends BaseRequest {
 
     @Override
     public RespBase call() {
-        //对比本地列表
-        boolean have = FaceListManager.getInstance().contains(mFeatureData);
-        if (have) {
-            //本地列表已有,放弃此次请求
-            RespBase respBase = new RespBase(200,null);
-            return respBase;
-        }
-        //没有,就和服务端通信比对
+
         try {
+            //对比本地列表
+            boolean have = FaceListManager.getInstance().contains(mFeatureData);
+            if (have) {
+                //本地列表已有,放弃此次请求
+                RespBase respBase = new RespBase(ErrorCode.NO_THING,null);
+                return respBase;
+            }
+            //没有,就和服务端通信比对
+            Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData,width,height);
+            String detectfacebase64 = ImageUtils.Bitmap2StrByBase64(detectface);
+            detectface.recycle();
+            detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
             Compare1nReponse compare1nReponse = gateService.compare1N(RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                     .with("library", new String[]{"1900000000", "2000000000"})
@@ -85,7 +91,7 @@ public class PreviewRequest extends BaseRequest {
                 RespBase resp = gateService.passRecordPreview(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                         .with("passType", PassType.FACE)
                         .with("passPersonId", personInfo.getId())
-                        .with("verifyPhoto", Base64.encodeToString(mFaceData, Base64.DEFAULT))
+                        .with("verifyPhoto", detectfacebase64)
                         .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                         .with("verifyThreshold", CameraConstant.getCameraParam().getFeatureQualityPass())
                         .with("verifyScore", personInfo.getScore())
@@ -94,18 +100,23 @@ public class PreviewRequest extends BaseRequest {
                         .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                         .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                         .create()).execute().body();
-                if(resp.isSuccess()){
-                    //开门
-                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true,true);
+                if(resp!=null){
+                    if(resp.isSuccess()){
+                        //开门
+                        AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true,true);
 //                    Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
+                    }
+                    return resp;
+                } else {
+                    return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
                 }
-                return resp;
+
 
             } else {
                 //服务端没有，结束
 
                 FaceListManager.getInstance().put(mFeatureData);
-                RespBase respBase = new RespBase(ErrorCode.WARING,"服务端没有此人信息");
+                RespBase respBase = new RespBase(ErrorCode.WARING,"审核未通过\n请等待");
                 return respBase;
             }
 
@@ -114,6 +125,11 @@ public class PreviewRequest extends BaseRequest {
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
             return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+        } finally {
+            mFeatureData=null;
+            mFaceData=null;
+            mFaceDetectResult=null;
+            System.gc();
         }
 
 

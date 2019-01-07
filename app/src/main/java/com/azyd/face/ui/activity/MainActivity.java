@@ -1,12 +1,15 @@
 package com.azyd.face.ui.activity;
 
 import android.annotation.SuppressLint;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -15,6 +18,7 @@ import android.widget.TextView;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.azyd.face.R;
+import com.azyd.face.app.AppContext;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.rxjava.AsynTransformer;
@@ -32,20 +36,24 @@ import com.idcard.HXCardReadManager;
 import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.IdFaceSdk;
 
-import java.util.concurrent.TimeUnit;
-
+import java.lang.ref.WeakReference;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 
 @Route(path = RoutePath.MAIN)
 public class MainActivity extends ButterBaseActivity {
-
+    final String TAG = "MainActivity";
+    final String EMPTY = "";
     @BindView(R.id.iv_service)
     ImageView ivService;
     @BindView(R.id.cl_frame)
@@ -62,10 +70,16 @@ public class MainActivity extends ButterBaseActivity {
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
     TextView btnCustom;
-    Disposable mDisposable;
+    Disposable msgDisposable,cameraDisposable;
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
-    private PublishSubject<CameraPreview.CameraFaceData> mCapturePublishSubject;
+    private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
+    private final String willcome="欢迎使用";
+    private final RespBase normalResp;
+
+    {
+        normalResp = new RespBase(ErrorCode.NORMAL, willcome);
+    }
 
     @Override
     protected void beforeSetContent() {
@@ -91,7 +105,7 @@ public class MainActivity extends ButterBaseActivity {
     @Override
     protected void initData(Bundle savedInstanceState) {
         mCardInfoPublishSubject = PublishSubject.create();
-        mCapturePublishSubject = PublishSubject.create();
+        mIDCardCapturePublishSubject = PublishSubject.create();
         //启动身份证读卡器
         mHxCardReadManager = new HXCardReadManager(h, this);
         mHxCardReadManager.start();
@@ -104,134 +118,22 @@ public class MainActivity extends ButterBaseActivity {
 
 
         SingleDispatcher.getInstance().getObservable()
-                .compose(new AsynTransformer())
-                .subscribe(new Consumer<RespBase>() {
-                               @Override
-                               public void accept(RespBase result) {
-                                   int delayTimes = 3;
-                                   switch (result.getCode()) {
-                                       case ErrorCode.NORMAL:
-                                       case ErrorCode.SUCCESS:
-                                           tvResult.setTextColor(Color.WHITE);
-                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-                                           tvName.setBackgroundResource(R.drawable.main_name_bg);
-                                           flDialog.setBackgroundResource(R.drawable.main_dialog);
-                                           clFrame.setBackgroundResource(R.drawable.main_frame);
-                                           ivService.setImageResource(R.drawable.icon_service);
-                                           delayTimes = 3;
-                                           break;
-                                       case ErrorCode.WARING:
-                                           tvResult.setTextColor(Color.YELLOW);
-                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-                                           tvName.setBackgroundResource(R.drawable.main_name_bg);
-                                           flDialog.setBackgroundResource(R.drawable.main_dialog);
-                                           clFrame.setBackgroundResource(R.drawable.main_frame);
-                                           ivService.setImageResource(R.drawable.icon_service);
-                                           delayTimes = 5;
-                                           break;
-                                       case ErrorCode.SYSTEM_ERROR:
-                                           tvResult.setTextColor(Color.YELLOW);
-                                           tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
-                                           tvName.setBackgroundResource(R.drawable.main_name_bg_error);
-                                           flDialog.setBackgroundResource(R.drawable.main_dialog_error);
-                                           clFrame.setBackgroundResource(R.drawable.main_frame_error);
-                                           ivService.setImageResource(R.drawable.icon_service_error);
-                                           delayTimes = 5;
-//                                           Observable.interval(200, TimeUnit.MILLISECONDS).take(5)
-//                                                    .compose(new AsynTransformer())
-//                                                   .subscribe(new Consumer<Long>() {
-//                                                       @Override
-//                                                       public void accept(Long s) throws Exception {
-//                                                           if (s % 2 == 1) {
-//                                                               ivService.setImageResource(R.drawable.icon_service_error);
-//                                                               clFrame.setBackgroundResource(R.drawable.main_frame_error);
-//                                                               tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
-//                                                               tvName.setBackgroundResource(R.drawable.main_name_bg_error);
-//                                                               flDialog.setBackgroundResource(R.drawable.main_dialog_error);
-//                                                           } else {
-//                                                               ivService.setImageResource(R.drawable.icon_service);
-//                                                               clFrame.setBackgroundResource(R.drawable.main_frame);
-//                                                               tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-//                                                               tvName.setBackgroundResource(R.drawable.main_name_bg);
-//                                                               flDialog.setBackgroundResource(R.drawable.main_dialog);
-//                                                           }
-//
-//                                                       }
-//                                                   }, new Consumer<Throwable>() {
-//                                                       @Override
-//                                                       public void accept(Throwable throwable) throws Exception {
-//
-//                                                       }
-//                                                   });
-                                           break;
-                                       default:
-                                           break;
-
-                                   }
-
-                                   if (!TextUtils.isEmpty(result.getMessage())) {
-                                       tvResult.setText(result.getMessage());
-                                   }
-
-                                   if (mDisposable != null && !mDisposable.isDisposed()) {
-                                       mDisposable.dispose();
-                                   }
-                                   mDisposable = Observable.just("")
-                                           .delay(delayTimes, TimeUnit.SECONDS)
-                                           .compose(new AsynTransformer())
-                                           .subscribe(new Consumer<String>() {
-                                               @Override
-                                               public void accept(String s) throws Exception {
-                                                   SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.NORMAL, "欢迎使用"));
-                                               }
-                                           });
-                               }
-                           }, new Consumer<Throwable>() {
-                               @Override
-                               public void accept(Throwable throwable) throws Exception {
-
-                               }
-                           }
-                );
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .onErrorReturn(new Function() {
+                    @Override
+                    public RespBase apply(Object o) {
+                        return normalResp;
+                    }
+                })
+                .subscribe(msgObserver);
         //捕获相机拍照、预览、身份证拍照事件
-        cameraView.getObservable().subscribe(new Consumer<CameraPreview.CameraFaceData>() {
-                                                 @Override
-                                                 public void accept(CameraPreview.CameraFaceData cameraFaceData) throws Exception {
-                                                     switch (cameraFaceData.getType()) {
-                                                         case CameraPreview.CameraFaceData.PREVIEW:
-                                                             PreviewRequest request = new PreviewRequest();
-                                                             request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                                                                     .setFeatureData(cameraFaceData.getFeatureData())
-                                                                     .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                                                                     .setFaceData(cameraFaceData.getFaceData());
-                                                             SingleDispatcher.getInstance().add(request);
-                                                             break;
-                                                         case CameraPreview.CameraFaceData.CAPTURE:
-                                                             CapturePhotoRequest captureRequest = new CapturePhotoRequest();
-                                                             captureRequest.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                                                                     .setFeatureData(cameraFaceData.getFeatureData())
-                                                                     .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                                                                     .setFaceData(cameraFaceData.getFaceData());
-                                                             SingleDispatcher.getInstance().add(captureRequest);
-                                                             break;
-                                                         case CameraPreview.CameraFaceData.IDCARD_CAPTURE:
-                                                             mCapturePublishSubject.onNext(cameraFaceData);
-                                                             break;
-                                                         default:
-                                                             break;
-                                                     }
-                                                 }
-                                             }, new Consumer<Throwable>() {
-                                                 @Override
-                                                 public void accept(Throwable throwable) throws Exception {
+        cameraView.getObservable().subscribe(cameraObserver);
 
-                                                 }
-                                             }
-        );
-        Observable.combineLatest(mCardInfoPublishSubject, mCapturePublishSubject, new BiFunction<MyHSIDCardInfo, CameraPreview.CameraFaceData, Boolean>() {
+        Observable.combineLatest(mCardInfoPublishSubject, mIDCardCapturePublishSubject, new BiFunction<MyHSIDCardInfo, CameraPreview.CameraFaceData, Boolean>() {
             @Override
             public Boolean apply(MyHSIDCardInfo myHSIDCardInfo, CameraPreview.CameraFaceData cameraFaceData) throws Exception {
-                if (myHSIDCardInfo != null && cameraFaceData != null) {
+                if (myHSIDCardInfo != null && cameraFaceData != null&&cameraFaceData.getFaceData()!=null) {
                     IDCardCaptureRequest request = new IDCardCaptureRequest();
                     request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
                             .setFeatureData(cameraFaceData.getFeatureData())
@@ -242,15 +144,128 @@ public class MainActivity extends ButterBaseActivity {
                 }
                 return true;
             }
-        }).compose(new AsynTransformer())
-                .subscribe(new Consumer() {
-                    @Override
-                    public void accept(Object o) throws Exception {
+        }).subscribe(new Consumer<Boolean>() {
+            @Override
+            public void accept(Boolean aBoolean) throws Exception {
 
-                    }
-                });
+            }
+        });
     }
+    private Observer msgObserver = new Observer<RespBase>(){
 
+        @Override
+        public void onSubscribe(Disposable d) {
+            msgDisposable = d;
+        }
+
+        @Override
+        public void onNext(RespBase respBase) {
+            int delayTimes = 3000;
+            switch (respBase.getCode()) {
+                case ErrorCode.NORMAL:
+                case ErrorCode.SUCCESS:
+                    tvResult.setText(respBase.getMessage());
+                    tvResult.setTextColor(Color.WHITE);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 3000;
+                    break;
+                case ErrorCode.WARING:
+                    tvResult.setText(respBase.getMessage());
+                    tvResult.setTextColor(Color.YELLOW);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 5000;
+                    break;
+                case ErrorCode.SYSTEM_ERROR:
+                    tvResult.setText(respBase.getMessage());
+                    tvResult.setTextColor(Color.YELLOW);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg_error);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog_error);
+                    clFrame.setBackgroundResource(R.drawable.main_frame_error);
+                    ivService.setImageResource(R.drawable.icon_service_error);
+                    delayTimes = 5000;
+                    break;
+                default:
+                    break;
+
+            }
+            h.removeCallbacks(resetRun);
+            h.postDelayed(resetRun,delayTimes);
+        }
+
+        @Override
+        public void onError(Throwable e) {
+
+        }
+
+        @Override
+        public void onComplete() {
+
+        }
+    };
+
+    private Runnable resetRun =new Runnable() {
+        @Override
+        public void run() {
+            SingleDispatcher.getInstance().getObservable().onNext(normalResp);
+        }
+    };
+    private Observer cameraObserver = new Observer<WeakReference<CameraPreview.CameraFaceData>>(){
+
+        @Override
+        public void onSubscribe(Disposable d) {
+            cameraDisposable = d;
+        }
+
+        @Override
+        public void onNext(WeakReference<CameraPreview.CameraFaceData> weakcameraFaceData) {
+            CameraPreview.CameraFaceData cameraFaceData = weakcameraFaceData.get();
+            if(cameraFaceData==null){
+                return;
+            }
+            switch (cameraFaceData.getType()) {
+                case CameraPreview.CameraFaceData.PREVIEW:
+                    PreviewRequest request = new PreviewRequest();
+                    request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                            .setFeatureData(cameraFaceData.getFeatureData())
+                            .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                            .setFaceData(cameraFaceData.getFaceData());
+                    SingleDispatcher.getInstance().add(request);
+                    break;
+                case CameraPreview.CameraFaceData.CAPTURE:
+                    CapturePhotoRequest captureRequest = new CapturePhotoRequest();
+                    captureRequest.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                            .setFeatureData(cameraFaceData.getFeatureData())
+                            .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                            .setFaceData(cameraFaceData.getFaceData());
+                    SingleDispatcher.getInstance().add(captureRequest);
+                    break;
+                case CameraPreview.CameraFaceData.IDCARD_CAPTURE:
+                    mIDCardCapturePublishSubject.onNext(cameraFaceData);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        @Override
+        public void onError(Throwable e) {
+
+        }
+
+        @Override
+        public void onComplete() {
+
+        }
+    };
     Handler h = new Handler() {
         @Override
         public void handleMessage(android.os.Message msg) {
@@ -273,7 +288,12 @@ public class MainActivity extends ButterBaseActivity {
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
                 MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getResources().getString(R.string.please_see_camera)));
+                //清空历史人脸数据
+                mIDCardCapturePublishSubject.onNext(new CameraPreview.CameraFaceData());
+                //新拍人脸
                 cameraView.takeIDCardPicture();
+
                 mCardInfoPublishSubject.onNext(ic);
 //                byte[] fp = new byte[1024];
 //                fp = ic.getFpDate();
@@ -365,8 +385,12 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
-        if (mDisposable != null && !mDisposable.isDisposed()) {
-            mDisposable.dispose();
+        h.removeCallbacks(resetRun);
+        if (msgDisposable != null && !msgDisposable.isDisposed()) {
+            msgDisposable.dispose();
+        }
+        if (cameraDisposable != null && !cameraDisposable.isDisposed()) {
+            cameraDisposable.dispose();
         }
         cameraView.onDestroy();
         mHxCardReadManager.close();
@@ -376,7 +400,16 @@ public class MainActivity extends ButterBaseActivity {
         super.onDestroy();
 
     }
-
+    @Override
+    public void onBackPressed() {
+        if (msgDisposable != null && !msgDisposable.isDisposed()) {
+            msgDisposable.dispose();
+        }
+        if (cameraDisposable != null && !cameraDisposable.isDisposed()) {
+            cameraDisposable.dispose();
+        }
+        super.onBackPressed();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

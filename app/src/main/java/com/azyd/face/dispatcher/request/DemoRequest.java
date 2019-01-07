@@ -7,7 +7,7 @@ import com.azyd.face.app.AppContext;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.base.BaseRequest;
-import com.azyd.face.util.Utils;
+import com.azyd.face.util.ImageUtils;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;
 
@@ -39,7 +39,7 @@ public class DemoRequest extends BaseRequest {
         for(File item:files){
 
             Bitmap bitmap = BitmapFactory.decodeFile(item.getCanonicalPath());
-            byte[] faceRGB = Utils.bitmap2RGB(bitmap);
+            byte[] faceRGB = ImageUtils.bitmap2RGB(bitmap);
             int width=bitmap.getWidth();
             int height =bitmap.getHeight();
             bitmap.recycle();
