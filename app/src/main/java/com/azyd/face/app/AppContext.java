@@ -1,13 +1,11 @@
 package com.azyd.face.app;
 
-import android.content.Context;
 import android.support.multidex.MultiDexApplication;
-import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.BuildConfig;
-import com.squareup.leakcanary.LeakCanary;
-import com.squareup.leakcanary.RefWatcher;
+import com.azyd.face.util.MacUtils;
 
 /**
  * @author suntao
@@ -16,7 +14,6 @@ import com.squareup.leakcanary.RefWatcher;
  */
 public class AppContext extends MultiDexApplication {
     private static AppContext mInstance;
-    private RefWatcher refWatcher;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -27,6 +24,12 @@ public class AppContext extends MultiDexApplication {
         }
 //        refWatcher = setupLeakCanary();
         ARouter.init(this);
+        String strMa = MacUtils.getMobileMAC(getApplicationContext());
+        if (MacUtils.ERROR_MAC_STR.equals(strMa)) {
+            Toast.makeText(this, "请授予开启wifi权限 以保证正常获取mac", Toast.LENGTH_SHORT).show();
+            MacUtils.getStartWifiEnabled();
+        }
+
     }
 
     public static AppContext getInstance() {

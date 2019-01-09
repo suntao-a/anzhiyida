@@ -7,6 +7,7 @@ import android.util.Log;
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
+import com.azyd.face.constant.Dictionaries;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.dispatcher.base.BaseRequest;
@@ -116,8 +117,8 @@ public class IDCardCaptureRequest extends BaseRequest {
             final GateService gateService = ServiceGenerator.createService(GateService.class);
             RespBase response = gateService.passRecordIDCard(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                     .with("personName",mMyHSIDCardInfo.getPeopleName())
-                    .with("personSex",mMyHSIDCardInfo.getSex())
-                    .with("personRace",mMyHSIDCardInfo.getPeople())
+                    .with("personSex", Dictionaries.getSexKey(mMyHSIDCardInfo.getSex()))
+                    .with("personRace",Dictionaries.getPeopleKey(mMyHSIDCardInfo.getPeople()))
                     .with("personBirthday",DATE_FORMAT.format(mMyHSIDCardInfo.getBirthDay()))
                     .with("personAddress",mMyHSIDCardInfo.getAddr())
                     .with("cardNum",mMyHSIDCardInfo.getIDCard())

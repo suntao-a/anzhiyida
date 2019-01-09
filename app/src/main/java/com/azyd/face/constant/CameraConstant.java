@@ -56,7 +56,7 @@ public class CameraConstant {
 
         @Override
         public int getFeatureQualityPass() {
-            return 70;
+            return 75;
         }
 
         @Override

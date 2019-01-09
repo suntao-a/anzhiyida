@@ -3,6 +3,7 @@ package com.azyd.face.ui.service;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.URL;
 import com.azyd.face.ui.module.Compare1nReponse;
+import com.azyd.face.ui.module.MacReponse;
 
 import java.util.Map;
 
@@ -11,6 +12,7 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.Headers;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
@@ -40,5 +42,6 @@ public interface GateService {
     @POST("http://127.0.0.1:8080/device/opendoor")
     Call<Map<String,Object>> openDoor(@FieldMap Map<String,Object> params);
 
-
+    @GET("http://127.0.0.1:8080/device/info/mac")
+    Call<MacReponse> getMac();
 }

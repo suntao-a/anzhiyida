@@ -19,6 +19,7 @@ import android.widget.TextView;
 import com.alibaba.android.arouter.facade.annotation.Route;
 import com.azyd.face.R;
 import com.azyd.face.app.AppContext;
+import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.base.rxjava.AsynTransformer;
@@ -99,6 +100,15 @@ public class MainActivity extends ButterBaseActivity {
         //设置surface为透明
         surfaceview.getHolder().setFormat(PixelFormat.TRANSPARENT);
         cameraView.setSurfaceView(surfaceview);
+        try {
+            if(AppInternal.getInstance().getIandosManager()!=null){
+                AppInternal.getInstance().getIandosManager().ICE_LEDSetBrightness(5);
+            }
+
+        }catch (Exception e){
+
+        }
+
     }
 
     @SuppressLint("CheckResult")
@@ -421,4 +431,17 @@ public class MainActivity extends ButterBaseActivity {
     public void onViewClicked(View view) {
         takePic();
     }
+
+
+//    { 0, "" },
+//    { 1, "汉" }, { 2, "蒙古" } , { 3, "回" }, { 4, "藏" }, { 5, "维吾尔" }, { 6, "苗" }, { 7, "彝" }, { 8, "壮" },
+//    { 9, "布依" }, { 10, "朝鲜" }, { 11, "满" }, { 12, "侗" }, { 13, "瑶" }, { 14, "白" }, { 15, "土家" }, { 16, "哈尼" },
+//    { 17, "哈萨克" }, { 18, "傣" }, { 19, "黎" }, { 20, "傈僳" }, { 21, "佤" }, { 22, "畲" }, {23, "高山" }, { 24, "拉祜" },
+//    { 25, "水" }, { 26, "东乡" }, { 27, "纳西" }, { 28, "景颇" }, { 29, "柯尔克孜" }, { 30, "土" }, { 31, "达斡尔" }, { 32, "仫佬" },
+//    { 33, "羌" }, { 34, "布朗" }, { 35, "撒拉" }, { 36, "毛南" }, { 37, "仡佬" }, { 38, "锡伯" }, { 39, "阿昌" }, { 40, "普米" },
+//    { 41, "塔吉克" }, { 42, "怒" }, { 43, "乌孜别克" }, { 44, "俄罗斯" }, { 45, "鄂温克" }, { 46, "德昂" }, { 47, "保安" }, { 48, "裕固" },
+//    { 49, "京" }, { 50, "塔塔尔" }, { 51, "独龙" }, { 52, "鄂伦春" }, { 53, "赫哲" }, { 54, "门巴" }, { 55, "珞巴" }, { 56, "基诺" },
+//    { 97, "其它" }, { 98, "外国血统中国籍" }
+
+    //{0,"未知"}，{1，"男"},{2,"女"}，{9，"其他"}
 }

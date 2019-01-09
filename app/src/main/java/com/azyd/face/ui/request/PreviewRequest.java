@@ -77,7 +77,7 @@ public class PreviewRequest extends BaseRequest {
             detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
             Compare1nReponse compare1nReponse = gateService.compare1N(RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
-                    .with("library", new String[]{"1900000000", "2000000000"})
+                    .with("library", new String[]{})
                     .with("mac", AppInternal.getInstance().getIMEI())
                     .with("threshold", CameraConstant.getCameraParam().getFeatureQualityPass())
                     .with("resultNum", 1).create()).execute().body();

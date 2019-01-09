@@ -28,8 +28,10 @@ import com.azyd.face.base.rxjava.SimpleObserver;
 import com.azyd.face.constant.ExtraName;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.net.ServiceGenerator;
+import com.azyd.face.ui.module.MacReponse;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.AppCompat;
+import com.azyd.face.util.MacUtils;
 import com.azyd.face.util.PhoneInfoUtil;
 import com.azyd.face.util.RequestParam;
 import com.azyd.face.util.SharedPreferencesHelper;
@@ -136,10 +138,10 @@ public class SplashActivity extends ButterBaseActivity {
 
     @Override
     public void onBackPressed() {
-        if(disposable1!=null&&!disposable1.isDisposed()){
+        if (disposable1 != null && !disposable1.isDisposed()) {
             disposable1.dispose();
         }
-        if(disposable2!=null&&!disposable2.isDisposed()){
+        if (disposable2 != null && !disposable2.isDisposed()) {
             disposable2.dispose();
         }
         if (bSdkInit) {
@@ -150,13 +152,14 @@ public class SplashActivity extends ButterBaseActivity {
     }
 
     protected void initBackground() {
-        Observable.concat(createInitMac(),createInitIandosManager(), createCheckMac(), createStartSDK())
+        Observable.concat(createInitMac(), createInitIandosManager(), createCheckMac(), createStartSDK())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable1 = d;
                     }
+
                     @Override
                     public void onError(RespThrowable responeThrowable) {
                         tvProcess.setText(responeThrowable.getMessage());
@@ -199,15 +202,26 @@ public class SplashActivity extends ButterBaseActivity {
                 response.setCode(200);
                 response.setMessage("mac获取...");
                 e.onNext(response);
-                String mac = "865315031703669";//PhoneInfoUtil.getIMEI(getApplication());
-                if (!TextUtils.isEmpty(mac)) {
-                    AppInternal.getInstance().setIMEI(mac);
+                try {
+                    MacReponse macReponse = ServiceGenerator.createService(GateService.class).getMac().execute().body();
+                    AppInternal.getInstance().setIMEI(macReponse.getMac().toUpperCase().replace(":","-"));
                     response.setCode(200);
                     response.setMessage("mac获取成功");
                     e.onNext(response);
                     e.onComplete();
-                } else {
-                    throw new ServerException(404, "mac地址获取失败");
+                } catch (Exception e1) {
+
+                    String mac = MacUtils.getMobileMAC(getApplication()).toUpperCase().replace(":","-");
+                    AppInternal.getInstance().setIMEI(mac);
+
+                    if (!TextUtils.isEmpty(AppInternal.getInstance().getIMEI())) {
+                        response.setCode(200);
+                        response.setMessage("mac获取成功");
+                        e.onNext(response);
+                        e.onComplete();
+                    } else {
+                        throw new ServerException(404, "mac地址获取失败");
+                    }
                 }
 
             }
@@ -254,12 +268,17 @@ public class SplashActivity extends ButterBaseActivity {
                 try {
                     response = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
-                    if (response.isSuccess()) {
-                        response.setMessage("设备在线检测成功");
-                        e.onNext(response);
-                        e.onComplete();
+                    if (response != null) {
+                        if (response.isSuccess()) {
+                            response.setMessage("设备在线检测成功");
+                            e.onNext(response);
+                            e.onComplete();
+                        } else {
+                            throw new ServerException(response.getCode(), "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                        }
+
                     } else {
-                        throw new ServerException(response.getCode(), "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                        throw new ServerException(404, "设备mac:" + AppInternal.getInstance().getIMEI());
                     }
                 } catch (IOException e1) {
                     throw new ServerException(404, "核验主机故障");
@@ -283,7 +302,8 @@ public class SplashActivity extends ButterBaseActivity {
                     // 用户名及部门信息非必须，但可由终端设置或编辑后就可在服务器上按这些信息查询以方便管理
                     // 密码信息暂时无用，但用户名密码等信息将来或可用于扩展鉴权
 //                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "192.168.0.107", 6389, "张三san", "8888888", "研发部e");
-                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.107");
+//                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.106");
+                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "http://8wr7rx.natappfree.cc");
                     IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, ip, 6389, "张三san", "8888888", "研发部e");
 
                     int version = IdFaceSdk.IdFaceSdkVer();
@@ -334,10 +354,10 @@ public class SplashActivity extends ButterBaseActivity {
 
 
         } else {
-            if(disposable1!=null&&!disposable1.isDisposed()){
+            if (disposable1 != null && !disposable1.isDisposed()) {
                 disposable1.dispose();
             }
-            if(disposable2!=null&&!disposable2.isDisposed()){
+            if (disposable2 != null && !disposable2.isDisposed()) {
                 disposable2.dispose();
             }
             count = 0;
