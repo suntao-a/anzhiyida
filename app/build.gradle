@@ -20,6 +20,9 @@ android {
                 arguments = [AROUTER_MODULE_NAME: project.getName()]
             }
         }
+        ndk {
+            abiFilters "armeabi-v7a","x86"
+        }
     }
     /**签名设置**/
     signingConfigs {
@@ -60,6 +63,7 @@ dependencies {
     //ConverterFactory的Gson依赖包
     implementation "com.squareup.retrofit2:converter-scalars:${RETROFIT_VERSION}"
     //
+    implementation "com.tencent.bugly:crashreport:${BUGLY_VERSION}"
     implementation "com.squareup.retrofit2:adapter-rxjava2:${RETROFIT_VERSION}"
     annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTERKNIFE_VERSION}"
     implementation 'com.alibaba:arouter-api:+'
