@@ -17,6 +17,7 @@ import retrofit2.http.Headers;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Url;
 
 /**
  * @author suntao
@@ -24,19 +25,19 @@ import retrofit2.http.Part;
  * $describe$
  */
 public interface GateService {
-    @POST(URL.CHECK_REGIST)
-    Call<RespBase> checkRegist(@Body Map<String, Object> params);
-    @POST(URL.FACE_COMPARE_1_N)
-    Call<Compare1nReponse> compare1N(@Body Map<String, Object> params);
+    @POST
+    Call<RespBase> checkRegist(@Url String url,@Body Map<String, Object> params);
+    @POST
+    Call<Compare1nReponse> compare1N(@Url String url,@Body Map<String, Object> params);
 
-    @POST(URL.PASS_RECORD_PREVIEW)
-    Call<RespBase> passRecordPreview(@Body Map<String, Object> params);
+    @POST
+    Call<RespBase> passRecordPreview(@Url String url,@Body Map<String, Object> params);
 
-    @POST(URL.PASS_RECORD_NOCARD)
-    Call<RespBase> passRecordNoCard(@Body Map<String, Object> params);
+    @POST
+    Call<RespBase> passRecordNoCard(@Url String url,@Body Map<String, Object> params);
 //    @Headers("Cache-Control: max-age=560000")
-    @POST(URL.PASS_RECORD_IDCARD)
-    Call<RespBase> passRecordIDCard(@Body Map<String, Object> params);
+    @POST
+    Call<RespBase> passRecordIDCard(@Url String url,@Body Map<String, Object> params);
 
     @FormUrlEncoded
     @POST("http://127.0.0.1:8080/device/opendoor")

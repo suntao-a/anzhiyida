@@ -28,6 +28,7 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.Face;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.iandos.ICE_VF_DetectParam;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Environment;
@@ -46,6 +47,7 @@ import android.view.TextureView;
 
 import com.azyd.face.R;
 import com.azyd.face.app.AppContext;
+import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 
@@ -129,7 +131,7 @@ public class CameraPreview extends TextureView {
     Size cPixelSize;//相机成像尺寸
     boolean isFront = true;
     Disposable previewDisposable;
-
+    ICE_VF_DetectParam mICE_vf_detectParam;
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
@@ -165,6 +167,11 @@ public class CameraPreview extends TextureView {
         options=new BitmapFactory.Options();
         options.inSampleSize = 1;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
+        mICE_vf_detectParam = new ICE_VF_DetectParam(ICE_VF_DetectParam.ICE_PICTURE_TYPE_VID,640,480);
+        mICE_vf_detectParam.setSensitive(1);
+        mICE_vf_detectParam.setEvalFace(1);
+        mICE_vf_detectParam.setTracking(1);
+        mICE_vf_detectParam.setDetLiveness(1);
     }
 
     public Observable<WeakReference<CameraFaceData>> getObservable() {
@@ -982,7 +989,7 @@ public class CameraPreview extends TextureView {
                 byte[] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
                 image.close();
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                Bitmap bitmap = null;
                 //旋转、镜像
                 Bitmap faceImg = null;
                 byte[] faceRGB=null;
@@ -1074,9 +1081,11 @@ public class CameraPreview extends TextureView {
                 return;
             }
             try {
+
+                int ret = AppInternal.getInstance().getIandosManager().ICE_VFT_SetTrackParam(mICE_vf_detectParam);
                 long tempcurrtime = System.currentTimeMillis();
 
-                if (tempcurrtime - currentTime > mInterval&&true) {
+                if (tempcurrtime - currentTime > mInterval&&ret==0) {
                     System.gc();
                     //处理
                     ByteBuffer buffer = image.getPlanes()[0].getBuffer();

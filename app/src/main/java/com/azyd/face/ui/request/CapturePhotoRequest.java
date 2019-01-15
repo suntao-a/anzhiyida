@@ -8,6 +8,7 @@ import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
+import com.azyd.face.constant.URL;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
@@ -70,7 +71,7 @@ public class CapturePhotoRequest extends BaseRequest {
             detectface.recycle();
             detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            RespBase response = gateService.passRecordNoCard(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+            RespBase response = gateService.passRecordNoCard(URL.BASE+URL.PASS_RECORD_NOCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                     .with("passType", PassType.DYNAMIC_NORMAL)
                     .with("verifyPhoto", detectfacebase64)
                     .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))

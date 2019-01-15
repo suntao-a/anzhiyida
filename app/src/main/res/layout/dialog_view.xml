@@ -1,10 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
-    android:layout_height="match_parent">
-<EditText
-    android:id="@+id/et_ip"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<TextView
+    android:id="@+id/tv1"
+    android:layout_width="130dp"
     android:layout_height="wrap_content"
-    android:hint="例如127.0.0.1"/>
+    android:text="SDK IP："
+    android:gravity="right"
+    app:layout_constraintLeft_toLeftOf="parent"
+    app:layout_constraintTop_toTopOf="@+id/et_ip"
+    app:layout_constraintBottom_toBottomOf="@+id/et_ip"
+    />
+    <EditText
+    android:id="@+id/et_ip"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:hint="例如127.0.0.1"
+        app:layout_constraintLeft_toRightOf="@+id/tv1"
+        app:layout_constraintRight_toRightOf="parent"
+        />
+
+    <TextView
+        android:id="@+id/tv2"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:text="Service IP："
+        android:gravity="right"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/et_server_ip"
+        app:layout_constraintBottom_toBottomOf="@+id/et_server_ip"
+        />
+    <EditText
+        android:id="@+id/et_server_ip"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="例如http://127.0.0.1"
+        app:layout_constraintLeft_toRightOf="@+id/tv2"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_ip"
+        />
+    <TextView
+        android:id="@+id/tv3"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:text="人像比对分数："
+        android:gravity="right"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/et_preview_threshold"
+        app:layout_constraintBottom_toBottomOf="@+id/et_preview_threshold"
+        />
+    <EditText
+        android:id="@+id/et_preview_threshold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="75"
+        android:inputType="number"
+        app:layout_constraintLeft_toRightOf="@+id/tv2"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_server_ip"
+        />
+    <TextView
+        android:id="@+id/tv4"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:text="人证比对分数："
+        android:gravity="right"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/et_idcard_threshold"
+        app:layout_constraintBottom_toBottomOf="@+id/et_idcard_threshold"
+        />
+    <EditText
+        android:id="@+id/et_idcard_threshold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="60"
+        android:inputType="number"
+        app:layout_constraintLeft_toRightOf="@+id/tv2"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_preview_threshold"
+        />
+    <TextView
+        android:id="@+id/tv5"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:text="进出类型："
+        android:gravity="right"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/sp_inout"
+        app:layout_constraintBottom_toBottomOf="@+id/sp_inout"
+        />
+    <Spinner
+        android:id="@+id/sp_inout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:entries="@array/inout"
+        app:layout_constraintLeft_toRightOf="@+id/tv5"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_idcard_threshold"
+        />
 </android.support.constraint.ConstraintLayout>

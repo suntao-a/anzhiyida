@@ -10,6 +10,7 @@ import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.Dictionaries;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
+import com.azyd.face.constant.URL;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
@@ -115,7 +116,7 @@ public class IDCardCaptureRequest extends BaseRequest {
             detectface.recycle();
             detectface=null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            RespBase response = gateService.passRecordIDCard(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+            RespBase response = gateService.passRecordIDCard(URL.BASE+URL.PASS_RECORD_IDCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                     .with("personName",mMyHSIDCardInfo.getPeopleName())
                     .with("personSex", Dictionaries.getSexKey(mMyHSIDCardInfo.getSex()))
                     .with("personRace",Dictionaries.getPeopleKey(mMyHSIDCardInfo.getPeople()))

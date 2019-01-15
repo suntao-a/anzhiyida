@@ -31,6 +31,7 @@ import com.azyd.face.ui.request.CapturePhotoRequest;
 import com.azyd.face.ui.request.IDCardCaptureRequest;
 import com.azyd.face.ui.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
+import com.azyd.face.util.ChineseToSpeech;
 import com.azyd.face.view.CameraPreview;
 import com.huashi.otg.sdk.HandlerMsg;
 import com.idcard.HXCardReadManager;
@@ -75,6 +76,7 @@ public class MainActivity extends ButterBaseActivity {
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
+    ChineseToSpeech mChineseToSpeech;
     private final String willcome="欢迎使用";
     private final RespBase normalResp;
 
@@ -114,6 +116,9 @@ public class MainActivity extends ButterBaseActivity {
     @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
+        //原生语音播报
+        mChineseToSpeech = new ChineseToSpeech();
+
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
         //启动身份证读卡器
@@ -173,6 +178,15 @@ public class MainActivity extends ButterBaseActivity {
             int delayTimes = 3000;
             switch (respBase.getCode()) {
                 case ErrorCode.NORMAL:
+                    tvResult.setText(respBase.getMessage());
+                    tvResult.setTextColor(Color.WHITE);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 3000;
+                    break;
                 case ErrorCode.SUCCESS:
                     tvResult.setText(respBase.getMessage());
                     tvResult.setTextColor(Color.WHITE);
@@ -181,6 +195,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
+                    mChineseToSpeech.speech(respBase.getVoice());
                     delayTimes = 3000;
                     break;
                 case ErrorCode.WARING:
@@ -191,6 +206,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
+                    mChineseToSpeech.speech(respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 case ErrorCode.SYSTEM_ERROR:
@@ -201,6 +217,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                     clFrame.setBackgroundResource(R.drawable.main_frame_error);
                     ivService.setImageResource(R.drawable.icon_service_error);
+                    mChineseToSpeech.speech(respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 default:
@@ -395,6 +412,7 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
+        mChineseToSpeech.destroy();
         h.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();

@@ -2,6 +2,7 @@ package com.azyd.face.ui.activity;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.iandos.IIandosService;
 import android.iandos.IandosManager;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +29,7 @@ import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.base.rxjava.SimpleObserver;
 import com.azyd.face.constant.ExtraName;
 import com.azyd.face.constant.RoutePath;
+import com.azyd.face.constant.URL;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.module.MacReponse;
 import com.azyd.face.ui.service.GateService;
@@ -52,6 +55,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import retrofit2.http.Url;
 
 /**
  * @author suntao
@@ -62,6 +66,7 @@ import io.reactivex.functions.Consumer;
 public class SplashActivity extends ButterBaseActivity {
     Disposable disposable2;
     Disposable disposable1;
+    Disposable disposable3;
     @BindView(R.id.tv_process)
     TextView tvProcess;
     @BindView(R.id.image_back)
@@ -134,6 +139,9 @@ public class SplashActivity extends ButterBaseActivity {
         if (disposable2 != null) {
             disposable2.dispose();
         }
+        if (disposable3 != null) {
+            disposable3.dispose();
+        }
     }
 
     @Override
@@ -144,6 +152,9 @@ public class SplashActivity extends ButterBaseActivity {
         if (disposable2 != null && !disposable2.isDisposed()) {
             disposable2.dispose();
         }
+        if (disposable3 != null && !disposable3.isDisposed()) {
+            disposable3.dispose();
+        }
         if (bSdkInit) {
             bSdkInit = false;
             IdFaceSdk.IdFaceSdkUninit();
@@ -152,6 +163,7 @@ public class SplashActivity extends ButterBaseActivity {
     }
 
     protected void initBackground() {
+        URL.BASE = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE);
         Observable.concat(createInitMac(), createInitIandosManager(), createCheckMac(), createStartSDK())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
@@ -185,7 +197,7 @@ public class SplashActivity extends ButterBaseActivity {
                                     @Override
                                     public void accept(Long aLong) {
                                         finish();
-                                        ARouter.getInstance().build(RoutePath.MAIN).navigation();
+                                        ARouter.getInstance().build(RoutePath.MAIN).navigation(SplashActivity.this);
                                     }
                                 });
 
@@ -204,14 +216,14 @@ public class SplashActivity extends ButterBaseActivity {
                 e.onNext(response);
                 try {
                     MacReponse macReponse = ServiceGenerator.createService(GateService.class).getMac().execute().body();
-                    AppInternal.getInstance().setIMEI(macReponse.getMac().toUpperCase().replace(":","-"));
+                    AppInternal.getInstance().setIMEI(macReponse.getMac().toUpperCase().replace(":", "-"));
                     response.setCode(200);
                     response.setMessage("mac获取成功");
                     e.onNext(response);
                     e.onComplete();
                 } catch (Exception e1) {
 
-                    String mac = MacUtils.getMobileMAC(getApplication()).toUpperCase().replace(":","-");
+                    String mac = MacUtils.getMobileMAC(getApplication()).toUpperCase().replace(":", "-");
                     AppInternal.getInstance().setIMEI(mac);
 
                     if (!TextUtils.isEmpty(AppInternal.getInstance().getIMEI())) {
@@ -266,7 +278,7 @@ public class SplashActivity extends ButterBaseActivity {
                 response.setMessage("设备在线检测...");
                 e.onNext(response);
                 try {
-                    response = ServiceGenerator.createService(GateService.class).checkRegist(RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
+                    response = ServiceGenerator.createService(GateService.class).checkRegist(URL.BASE+URL.CHECK_REGIST,RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
                     if (response != null) {
                         if (response.isSuccess()) {
@@ -362,14 +374,24 @@ public class SplashActivity extends ButterBaseActivity {
             }
             count = 0;
             View view = getLayoutInflater().inflate(R.layout.dialog_view, null);
-            final EditText editText = (EditText) view.findViewById(R.id.et_ip);
-            String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
-            if (!TextUtils.isEmpty(ip)) {
-                editText.setText(ip);
-            }
+            final EditText editSdkIP = (EditText) view.findViewById(R.id.et_ip);
+            final EditText editServiceIP = (EditText) view.findViewById(R.id.et_server_ip);
+            final EditText editPreviewTh = (EditText) view.findViewById(R.id.et_preview_threshold);
+            final EditText editIDCardTh = (EditText) view.findViewById(R.id.et_idcard_threshold);
+            final Spinner spInOut = (Spinner) view.findViewById(R.id.sp_inout);
+            String sdkIP = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
+            String serviceIP = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, "");
+            String previewTh = (String) SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, "");
+            String idCardTh = (String) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, "");
+            int inOut = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IN_OUT, 0);
+            editSdkIP.setText(sdkIP);
+            editServiceIP.setText(serviceIP);
+            editPreviewTh.setText(previewTh);
+            editIDCardTh.setText(idCardTh);
+            spInOut.setSelection(inOut);
             dialog = new AlertDialog.Builder(this)
                     .setIcon(R.mipmap.ic_launcher)//设置标题的图片
-                    .setTitle("sdk server ip")//设置对话框的标题
+                    .setTitle("系统设置")//设置对话框的标题
                     .setView(view)
                     .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                         @Override
@@ -380,10 +402,22 @@ public class SplashActivity extends ButterBaseActivity {
                     .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            String content = editText.getText().toString().trim();
-                            SharedPreferencesHelper.getInstance().put(ExtraName.SDK_IP, content);
-                            Toast.makeText(SplashActivity.this, content, Toast.LENGTH_SHORT).show();
+
+                            SharedPreferencesHelper.getInstance().put(ExtraName.SDK_IP, editSdkIP.getText().toString().trim());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.SERVICE_IP, editServiceIP.getText().toString().trim());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.PREVIEW_THRESHOLD, editPreviewTh.getText().toString().trim());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.IDCARD_THRESHOLD, editIDCardTh.getText().toString().trim());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.IN_OUT, spInOut.getSelectedItemPosition());
+                            Toast.makeText(SplashActivity.this, "保存成功,即将重新启动", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
+                            disposable3 = Observable.timer(2, TimeUnit.SECONDS)
+                                    .subscribe(new Consumer<Long>() {
+                                        @Override
+                                        public void accept(Long aLong) {
+                                            finish();
+                                            ARouter.getInstance().build(RoutePath.SPLASH).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).navigation(SplashActivity.this);
+                                        }
+                                    });
                         }
                     }).create();
             dialog.setCanceledOnTouchOutside(false);

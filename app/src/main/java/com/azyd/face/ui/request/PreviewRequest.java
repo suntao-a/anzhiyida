@@ -10,6 +10,7 @@ import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
+import com.azyd.face.constant.URL;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.net.ServiceGenerator;
@@ -76,7 +77,7 @@ public class PreviewRequest extends BaseRequest {
             detectface.recycle();
             detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            Compare1nReponse compare1nReponse = gateService.compare1N(RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
+            Compare1nReponse compare1nReponse = gateService.compare1N(URL.BASE+URL.FACE_COMPARE_1_N,RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                     .with("library", new String[]{})
                     .with("mac", AppInternal.getInstance().getIMEI())
                     .with("threshold", CameraConstant.getCameraParam().getFeatureQualityPass())
@@ -88,7 +89,7 @@ public class PreviewRequest extends BaseRequest {
                 FaceListManager.getInstance().put(mFeatureData);
 
                 //上报通行记录
-                RespBase resp = gateService.passRecordPreview(RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                RespBase resp = gateService.passRecordPreview(URL.BASE+URL.PASS_RECORD_PREVIEW,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                         .with("passType", PassType.FACE)
                         .with("passPersonId", personInfo.getId())
                         .with("verifyPhoto", detectfacebase64)
