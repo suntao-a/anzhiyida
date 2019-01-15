@@ -290,7 +290,12 @@ public class SplashActivity extends ButterBaseActivity {
                         }
 
                     } else {
-                        throw new ServerException(404, "设备mac:" + AppInternal.getInstance().getIMEI());
+                        response = new RespBase();
+                        response.setCode(200);
+                        response.setMessage("设备在线检测...");
+                        e.onNext(response);
+                        e.onComplete();
+//                        throw new ServerException(404, "设备mac:" + AppInternal.getInstance().getIMEI());
                     }
                 } catch (IOException e1) {
                     throw new ServerException(404, "核验主机故障");

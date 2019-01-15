@@ -32,11 +32,15 @@ import com.azyd.face.ui.request.IDCardCaptureRequest;
 import com.azyd.face.ui.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
 import com.azyd.face.util.ChineseToSpeech;
+import com.azyd.face.util.KdxfSpeechUtils;
 import com.azyd.face.view.CameraPreview;
 import com.huashi.otg.sdk.HandlerMsg;
 import com.idcard.HXCardReadManager;
 import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.IdFaceSdk;
+import com.iflytek.cloud.SpeechConstant;
+import com.iflytek.cloud.SpeechSynthesizer;
+import com.iflytek.cloud.SpeechUtility;
 
 import java.lang.ref.WeakReference;
 import butterknife.BindView;
@@ -76,7 +80,6 @@ public class MainActivity extends ButterBaseActivity {
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
-    ChineseToSpeech mChineseToSpeech;
     private final String willcome="欢迎使用";
     private final RespBase normalResp;
 
@@ -104,7 +107,8 @@ public class MainActivity extends ButterBaseActivity {
         cameraView.setSurfaceView(surfaceview);
         try {
             if(AppInternal.getInstance().getIandosManager()!=null){
-                AppInternal.getInstance().getIandosManager().ICE_LEDSetBrightness(5);
+                boolean open = AppInternal.getInstance().getIandosManager().ICE_LEDSetBrightness(6);
+                Log.d(TAG, "initView: "+(open?"success":"failed"));
             }
 
         }catch (Exception e){
@@ -116,8 +120,6 @@ public class MainActivity extends ButterBaseActivity {
     @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
-        //原生语音播报
-        mChineseToSpeech = new ChineseToSpeech();
 
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
@@ -130,8 +132,6 @@ public class MainActivity extends ButterBaseActivity {
         } catch (Exception e) {
 
         }
-
-
         SingleDispatcher.getInstance().getObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -166,6 +166,8 @@ public class MainActivity extends ButterBaseActivity {
             }
         });
     }
+
+    //处理结果
     private Observer msgObserver = new Observer<RespBase>(){
 
         @Override
@@ -195,7 +197,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    mChineseToSpeech.speech(respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
                     delayTimes = 3000;
                     break;
                 case ErrorCode.WARING:
@@ -206,7 +208,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    mChineseToSpeech.speech(respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 case ErrorCode.SYSTEM_ERROR:
@@ -217,7 +219,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                     clFrame.setBackgroundResource(R.drawable.main_frame_error);
                     ivService.setImageResource(R.drawable.icon_service_error);
-                    mChineseToSpeech.speech(respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 default:
@@ -412,7 +414,6 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
-        mChineseToSpeech.destroy();
         h.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();

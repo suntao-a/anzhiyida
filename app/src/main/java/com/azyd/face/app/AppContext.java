@@ -10,6 +10,8 @@ import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.BuildConfig;
 import com.azyd.face.util.MacUtils;
 import com.azyd.face.util.Utils;
+import com.iflytek.cloud.SpeechConstant;
+import com.iflytek.cloud.SpeechUtility;
 import com.tencent.bugly.crashreport.CrashReport;
 
 import io.reactivex.Observable;
@@ -52,8 +54,8 @@ public class AppContext extends MultiDexApplication {
                 .map(new Function<Application, Object>() {
                     @Override
                     public Object apply(Application application) throws Exception {
-                        CrashReport.initCrashReport(getApplicationContext(), "注册时申请的APPID", true);
-
+                        CrashReport.initCrashReport(getApplicationContext(), "af671157f5", true);
+                        SpeechUtility. createUtility( getApplicationContext(), SpeechConstant.APPID + "=5c3de4c6" );
                         return application;
                     }
                 })
