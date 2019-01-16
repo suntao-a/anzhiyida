@@ -38,11 +38,9 @@ import com.huashi.otg.sdk.HandlerMsg;
 import com.idcard.HXCardReadManager;
 import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.IdFaceSdk;
-import com.iflytek.cloud.SpeechConstant;
-import com.iflytek.cloud.SpeechSynthesizer;
-import com.iflytek.cloud.SpeechUtility;
 
 import java.lang.ref.WeakReference;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -76,11 +74,11 @@ public class MainActivity extends ButterBaseActivity {
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
     TextView btnCustom;
-    Disposable msgDisposable,cameraDisposable;
+    Disposable msgDisposable, cameraDisposable;
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
-    private final String willcome="欢迎使用";
+    private final String willcome = "欢迎使用";
     private final RespBase normalResp;
 
     {
@@ -105,15 +103,12 @@ public class MainActivity extends ButterBaseActivity {
         //设置surface为透明
         surfaceview.getHolder().setFormat(PixelFormat.TRANSPARENT);
         cameraView.setSurfaceView(surfaceview);
-        try {
-            if(AppInternal.getInstance().getIandosManager()!=null){
-                boolean open = AppInternal.getInstance().getIandosManager().ICE_LEDSetBrightness(6);
-                Log.d(TAG, "initView: "+(open?"success":"failed"));
-            }
 
-        }catch (Exception e){
-
+        if (AppInternal.getInstance().getIandosManager() != null) {
+            AppInternal.getInstance().getIandosManager().ICE_LEDSetBrightness(6);
+            openLed();
         }
+
 
     }
 
@@ -148,7 +143,7 @@ public class MainActivity extends ButterBaseActivity {
         Observable.combineLatest(mCardInfoPublishSubject, mIDCardCapturePublishSubject, new BiFunction<MyHSIDCardInfo, CameraPreview.CameraFaceData, Boolean>() {
             @Override
             public Boolean apply(MyHSIDCardInfo myHSIDCardInfo, CameraPreview.CameraFaceData cameraFaceData) throws Exception {
-                if (myHSIDCardInfo != null && cameraFaceData != null&&cameraFaceData.getFaceData()!=null) {
+                if (myHSIDCardInfo != null && cameraFaceData != null && cameraFaceData.getFaceData() != null) {
                     IDCardCaptureRequest request = new IDCardCaptureRequest();
                     request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
                             .setFeatureData(cameraFaceData.getFeatureData())
@@ -168,7 +163,7 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     //处理结果
-    private Observer msgObserver = new Observer<RespBase>(){
+    private Observer msgObserver = new Observer<RespBase>() {
 
         @Override
         public void onSubscribe(Disposable d) {
@@ -197,7 +192,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 3000;
                     break;
                 case ErrorCode.WARING:
@@ -208,7 +203,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 case ErrorCode.SYSTEM_ERROR:
@@ -219,7 +214,7 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                     clFrame.setBackgroundResource(R.drawable.main_frame_error);
                     ivService.setImageResource(R.drawable.icon_service_error);
-                    KdxfSpeechUtils.speekText(MainActivity.this,respBase.getVoice());
+                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 default:
@@ -227,7 +222,7 @@ public class MainActivity extends ButterBaseActivity {
 
             }
             h.removeCallbacks(resetRun);
-            h.postDelayed(resetRun,delayTimes);
+            h.postDelayed(resetRun, delayTimes);
         }
 
         @Override
@@ -241,13 +236,13 @@ public class MainActivity extends ButterBaseActivity {
         }
     };
 
-    private Runnable resetRun =new Runnable() {
+    private Runnable resetRun = new Runnable() {
         @Override
         public void run() {
             SingleDispatcher.getInstance().getObservable().onNext(normalResp);
         }
     };
-    private Observer cameraObserver = new Observer<WeakReference<CameraPreview.CameraFaceData>>(){
+    private Observer cameraObserver = new Observer<WeakReference<CameraPreview.CameraFaceData>>() {
 
         @Override
         public void onSubscribe(Disposable d) {
@@ -257,7 +252,7 @@ public class MainActivity extends ButterBaseActivity {
         @Override
         public void onNext(WeakReference<CameraPreview.CameraFaceData> weakcameraFaceData) {
             CameraPreview.CameraFaceData cameraFaceData = weakcameraFaceData.get();
-            if(cameraFaceData==null){
+            if (cameraFaceData == null) {
                 return;
             }
             switch (cameraFaceData.getType()) {
@@ -317,7 +312,7 @@ public class MainActivity extends ButterBaseActivity {
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
                 MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getResources().getString(R.string.please_see_camera)));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
                 //清空历史人脸数据
                 mIDCardCapturePublishSubject.onNext(new CameraPreview.CameraFaceData());
                 //新拍人脸
@@ -414,6 +409,7 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
+        closeLed();
         h.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
@@ -429,8 +425,10 @@ public class MainActivity extends ButterBaseActivity {
         super.onDestroy();
 
     }
+
     @Override
     public void onBackPressed() {
+        closeLed();
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
         }
@@ -439,19 +437,19 @@ public class MainActivity extends ButterBaseActivity {
         }
         super.onBackPressed();
     }
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // TODO: add setContentView(...) invocation
-        ButterKnife.bind(this);
-    }
+
 
     @OnClick(R.id.btn_custom)
     public void onViewClicked(View view) {
         takePic();
     }
 
-
+    private void openLed(){
+        AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(true,false);
+    }
+    private void closeLed(){
+        AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(false,false);
+    }
 //    { 0, "" },
 //    { 1, "汉" }, { 2, "蒙古" } , { 3, "回" }, { 4, "藏" }, { 5, "维吾尔" }, { 6, "苗" }, { 7, "彝" }, { 8, "壮" },
 //    { 9, "布依" }, { 10, "朝鲜" }, { 11, "满" }, { 12, "侗" }, { 13, "瑶" }, { 14, "白" }, { 15, "土家" }, { 16, "哈尼" },
