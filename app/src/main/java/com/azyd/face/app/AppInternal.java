@@ -8,6 +8,7 @@ import android.iandos.IandosManager;
  * $describe$
  */
 public class AppInternal {
+    Integer StrangerDetectCount=6;
     String IMEI;
     IandosManager iandosManager;
     private static class AppInternalHolder {
@@ -32,5 +33,13 @@ public class AppInternal {
 
     public void setIandosManager(IandosManager iandosManager) {
         this.iandosManager = iandosManager;
+    }
+
+    public Integer getStrangerDetectCount() {
+        return StrangerDetectCount;
+    }
+
+    public void setStrangerDetectCount(Integer strangerDetectCount) {
+        StrangerDetectCount = strangerDetectCount;
     }
 }
