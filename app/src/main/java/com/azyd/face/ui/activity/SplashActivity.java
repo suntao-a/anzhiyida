@@ -163,7 +163,7 @@ public class SplashActivity extends ButterBaseActivity {
     }
 
     protected void initBackground() {
-        URL.BASE = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE);
+
         Observable.concat(createInitMac(), createInitIandosManager(), createCheckMac(), createStartSDK())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
@@ -235,33 +235,40 @@ public class SplashActivity extends ButterBaseActivity {
                         throw new ServerException(404, "mac地址获取失败");
                     }
                 }
-
-            }
-        });
-    }
-
-    private Observable createInitIandosManager() {
-        return Observable.create(new ObservableOnSubscribe<RespBase>() {
-            @Override
-            public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
-                RespBase response = new RespBase();
-                response.setCode(200);
-                response.setMessage("IandosManager初始化...");
-                e.onNext(response);
                 AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
-                if (AppInternal.getInstance().getIandosManager() != null) {
-                    response.setCode(200);
-                    response.setMessage("IandosManager初始化成功");
-                    e.onNext(response);
-                    e.onComplete();
-                } else {
-//                    throw new ServerException(404, "IandosManager初始化失败...");
-                    e.onComplete();
-                }
+//                AppInternal.getInstance().setStrangerDetectCount(SharedPreferencesHelper);
+                AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE));
+                AppInternal.getInstance().setIdcardThreshold(Integer.parseInt((String)SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, "65")));
+                AppInternal.getInstance().setServiceIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, ""));
+                AppInternal.getInstance().setInOut((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IN_OUT, 0));
+                AppInternal.getInstance().setPreviewThreshold(Integer.parseInt((String)SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, "70")));
 
             }
         });
     }
+//
+//    private Observable createInitIandosManager() {
+//        return Observable.create(new ObservableOnSubscribe<RespBase>() {
+//            @Override
+//            public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
+//                RespBase response = new RespBase();
+//                response.setCode(200);
+//                response.setMessage("IandosManager初始化...");
+//                e.onNext(response);
+//                AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
+//                if (AppInternal.getInstance().getIandosManager() != null) {
+//                    response.setCode(200);
+//                    response.setMessage("IandosManager初始化成功");
+//                    e.onNext(response);
+//                    e.onComplete();
+//                } else {
+////                    throw new ServerException(404, "IandosManager初始化失败...");
+//                    e.onComplete();
+//                }
+//
+//            }
+//        });
+//    }
 
     private Observable createCheckMac() {
         return Observable.create(new ObservableOnSubscribe<RespBase>() {
@@ -278,7 +285,7 @@ public class SplashActivity extends ButterBaseActivity {
                 response.setMessage("设备在线检测...");
                 e.onNext(response);
                 try {
-                    response = ServiceGenerator.createService(GateService.class).checkRegist(URL.BASE+URL.CHECK_REGIST,RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
+                    response = ServiceGenerator.createService(GateService.class).checkRegist(AppInternal.getInstance().getBaseUrl()+URL.CHECK_REGIST,RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
                     if (response != null) {
                         if (response.isSuccess()) {

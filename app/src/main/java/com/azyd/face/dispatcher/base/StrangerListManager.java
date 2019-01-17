@@ -23,7 +23,7 @@ public class StrangerListManager {
             synchronized (FaceListManager.class){
                 if(faceListManager==null){
                     faceListManager = new StrangerListManager();
-                    faceListManager.mSaveTimes=CameraConstant.getCameraParam().getFaceSaveTimes();
+                    faceListManager.mSaveTimes=AppInternal.getInstance().getStrangerFaceKeepTimes();
                     faceListManager.mDetectCount = AppInternal.getInstance().getStrangerDetectCount();
                 }
             }
@@ -39,7 +39,8 @@ public class StrangerListManager {
         aCache.put(hashcode,data,mSaveTimes);
     }
 
-    public boolean contains(byte[] featureData) {
+    public Integer loopReduceOnce(byte[] featureData) {
+        Integer count=null;
         byte[] value;
         Iterator<String> i = mKeyCount.keySet().iterator();
         while (i.hasNext()){
@@ -50,10 +51,11 @@ public class StrangerListManager {
                 continue;
             }
             if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=CameraConstant.getCameraParam().getFeatureQualityPass()){
-                return true;
+                count = mKeyCount.get(key);
+                mKeyCount.put(key,count--);
             }
         }
-        return false;
+        return count;
     }
     public void onDestory(){
         aCache.clear();

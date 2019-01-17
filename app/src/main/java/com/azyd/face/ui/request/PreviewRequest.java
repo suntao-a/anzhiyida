@@ -13,6 +13,7 @@ import com.azyd.face.constant.PassType;
 import com.azyd.face.constant.URL;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.dispatcher.base.FaceListManager;
+import com.azyd.face.dispatcher.base.StrangerListManager;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.module.Compare1nReponse;
 import com.azyd.face.ui.module.PersonInfo;
@@ -65,11 +66,16 @@ public class PreviewRequest extends BaseRequest {
 
         try {
             //对比本地列表
-            boolean have = FaceListManager.getInstance().contains(mFeatureData);
-            if (have) {
-                //本地列表已有,放弃此次请求
-                RespBase respBase = new RespBase(ErrorCode.NO_THING,null);
-                return respBase;
+
+//            boolean have = FaceListManager.getInstance().contains(mFeatureData);
+//            if (have) {
+//                //本地列表已有,放弃此次请求
+//                RespBase respBase = new RespBase(ErrorCode.NO_THING,null);
+//                return respBase;
+//            }
+            Integer loop = StrangerListManager.getInstance().loopReduceOnce(mFeatureData);
+            if(loop==null){
+
             }
             //没有,就和服务端通信比对
             Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData,width,height);

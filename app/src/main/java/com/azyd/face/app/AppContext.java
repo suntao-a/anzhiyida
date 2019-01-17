@@ -56,6 +56,8 @@ public class AppContext extends MultiDexApplication {
                     public Object apply(Application application) throws Exception {
                         CrashReport.initCrashReport(getApplicationContext(), "af671157f5", true);
                         SpeechUtility. createUtility( getApplicationContext(), SpeechConstant.APPID + "=5c3de4c6" );
+
+
                         return application;
                     }
                 })
