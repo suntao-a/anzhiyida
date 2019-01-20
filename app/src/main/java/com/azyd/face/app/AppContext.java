@@ -78,7 +78,9 @@ public class AppContext extends MultiDexApplication {
         return mInstance;
     }
 
-
+    public void exit(){
+        System.exit(0);
+    }
 
 //    private RefWatcher setupLeakCanary() {
 //        if (LeakCanary.isInAnalyzerProcess(this)) {

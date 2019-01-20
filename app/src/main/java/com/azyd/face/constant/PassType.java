@@ -10,5 +10,6 @@ public class PassType {
     public static final String FACE="1";
     public static final String DOOR_CARD="2";
     public static final String DYNAMIC_NORMAL="4";
+    public static final String STRANGER="5";
 
 }

@@ -192,7 +192,7 @@ public class CameraPreview extends TextureView {
         CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM_ERROR,"摄像机被占用"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
                 return;
             }
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -206,10 +206,9 @@ public class CameraPreview extends TextureView {
                 return;
             }
             manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
-        } catch (CameraAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
+            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
         }
     }
 
@@ -714,7 +713,7 @@ public class CameraPreview extends TextureView {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM_ERROR,"摄像机故障"));
+            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
         }
     }
 
@@ -834,7 +833,7 @@ public class CameraPreview extends TextureView {
             };
             mCaptureSession.stopRepeating();
 //            mCaptureSession.abortCaptures();
-            mCaptureSession.capture(captureBuilder.build(), captureCallback, null);
+            mCaptureSession.capture(captureBuilder.build(), captureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -869,7 +868,7 @@ public class CameraPreview extends TextureView {
                 }
             };
             mCaptureSession.stopRepeating();
-            mCaptureSession.capture(captureBuilder.build(), captureCallback, null);
+            mCaptureSession.capture(captureBuilder.build(), captureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -948,17 +947,17 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
                 if (ret <= 0) {
                     //检测人脸失败
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
 
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
                 if (ret != 0) {
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
                 mSubject.onNext(new WeakReference<>(new CameraFaceData()
@@ -1036,19 +1035,19 @@ public class CameraPreview extends TextureView {
                 if (ret <= 0) {
                     //检测人脸失败
 
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
 
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, finalwidth, finalheight, faceDetectResult, featureData);
                 if (ret != 0) {
 
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
 
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING,getContext().getResources().getString(R.string.please_see_camera)));
+                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
                     return;
                 }
                 mSubject.onNext(new WeakReference<>(new CameraFaceData()
@@ -1085,7 +1084,7 @@ public class CameraPreview extends TextureView {
                 int ret = AppInternal.getInstance().getIandosManager().ICE_VFT_SetTrackParam(mICE_vf_detectParam);
                 long tempcurrtime = System.currentTimeMillis();
 
-                if (tempcurrtime - currentTime > mInterval&&ret==0) {
+                if (tempcurrtime - currentTime > mInterval) {
                     System.gc();
                     //处理
                     ByteBuffer buffer = image.getPlanes()[0].getBuffer();

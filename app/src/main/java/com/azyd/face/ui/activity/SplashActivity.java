@@ -5,9 +5,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.iandos.IIandosService;
 import android.iandos.IandosManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.View;
@@ -27,6 +31,7 @@ import com.azyd.face.base.exception.RespThrowable;
 import com.azyd.face.base.exception.ServerException;
 import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.base.rxjava.SimpleObserver;
+import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.ExtraName;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.constant.URL;
@@ -164,7 +169,7 @@ public class SplashActivity extends ButterBaseActivity {
 
     protected void initBackground() {
 
-        Observable.concat(createInitMac(), createInitIandosManager(), createCheckMac(), createStartSDK())
+        Observable.concat(createInitMac(), createCheckMac(), createStartSDK())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
                     @Override
@@ -175,6 +180,16 @@ public class SplashActivity extends ButterBaseActivity {
                     @Override
                     public void onError(RespThrowable responeThrowable) {
                         tvProcess.setText(responeThrowable.getMessage());
+                        switch (responeThrowable.getCode()) {
+                            case ErrorCode.DEVICE_NOT_REGISTERED:
+                                MediaPlayer.create(SplashActivity.this, R.raw.device_not_registered).start();
+                                break;
+                            case ErrorCode.SERVER_ERROR:
+                                MediaPlayer.create(SplashActivity.this, R.raw.server_error).start();
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
                     @Override
@@ -212,37 +227,31 @@ public class SplashActivity extends ButterBaseActivity {
             public void subscribe(ObservableEmitter<RespBase> e) throws Exception {
                 RespBase response = new RespBase();
                 response.setCode(200);
-                response.setMessage("mac获取...");
+                response.setMessage("初始化系统参数...");
                 e.onNext(response);
                 try {
                     MacReponse macReponse = ServiceGenerator.createService(GateService.class).getMac().execute().body();
                     AppInternal.getInstance().setIMEI(macReponse.getMac().toUpperCase().replace(":", "-"));
-                    response.setCode(200);
-                    response.setMessage("mac获取成功");
-                    e.onNext(response);
-                    e.onComplete();
+
                 } catch (Exception e1) {
 
                     String mac = MacUtils.getMobileMAC(getApplication()).toUpperCase().replace(":", "-");
                     AppInternal.getInstance().setIMEI(mac);
 
-                    if (!TextUtils.isEmpty(AppInternal.getInstance().getIMEI())) {
-                        response.setCode(200);
-                        response.setMessage("mac获取成功");
-                        e.onNext(response);
-                        e.onComplete();
-                    } else {
-                        throw new ServerException(404, "mac地址获取失败");
-                    }
                 }
                 AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
-//                AppInternal.getInstance().setStrangerDetectCount(SharedPreferencesHelper);
-                AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE));
-                AppInternal.getInstance().setIdcardThreshold(Integer.parseInt((String)SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, "65")));
-                AppInternal.getInstance().setServiceIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, ""));
+                AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, ""));
+                AppInternal.getInstance().setIdcardThreshold((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, 60));
+                AppInternal.getInstance().setServiceIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE));
                 AppInternal.getInstance().setInOut((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IN_OUT, 0));
-                AppInternal.getInstance().setPreviewThreshold(Integer.parseInt((String)SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, "70")));
+                AppInternal.getInstance().setPreviewThreshold((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, 75));
+                AppInternal.getInstance().setStrangerKeepTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_KEEP_TIMES, 6));
+                AppInternal.getInstance().setStrangerCompareTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_COMPARE_TIMES, 5));
 
+                response.setCode(200);
+                response.setMessage("初始化系统参数成功");
+                e.onNext(response);
+                e.onComplete();
             }
         });
     }
@@ -285,7 +294,7 @@ public class SplashActivity extends ButterBaseActivity {
                 response.setMessage("设备在线检测...");
                 e.onNext(response);
                 try {
-                    response = ServiceGenerator.createService(GateService.class).checkRegist(AppInternal.getInstance().getBaseUrl()+URL.CHECK_REGIST,RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
+                    response = ServiceGenerator.createService(GateService.class).checkRegist(AppInternal.getInstance().getServiceIP() + URL.CHECK_REGIST, RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
                     if (response != null) {
                         if (response.isSuccess()) {
@@ -293,7 +302,7 @@ public class SplashActivity extends ButterBaseActivity {
                             e.onNext(response);
                             e.onComplete();
                         } else {
-                            throw new ServerException(response.getCode(), "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                         }
 
                     } else {
@@ -305,7 +314,7 @@ public class SplashActivity extends ButterBaseActivity {
 //                        throw new ServerException(404, "设备mac:" + AppInternal.getInstance().getIMEI());
                     }
                 } catch (IOException e1) {
-                    throw new ServerException(404, "核验主机故障");
+                    throw new ServerException(ErrorCode.SERVER_ERROR, "核验主机故障");
                 }
 
             }
@@ -391,16 +400,22 @@ public class SplashActivity extends ButterBaseActivity {
             final EditText editPreviewTh = (EditText) view.findViewById(R.id.et_preview_threshold);
             final EditText editIDCardTh = (EditText) view.findViewById(R.id.et_idcard_threshold);
             final Spinner spInOut = (Spinner) view.findViewById(R.id.sp_inout);
+            final EditText editStrangerKeep = (EditText) view.findViewById(R.id.et_stranger_keep_times);
+            final EditText editStrangerCompare = (EditText) view.findViewById(R.id.et_stranger_compare_times);
             String sdkIP = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "");
-            String serviceIP = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, "");
-            String previewTh = (String) SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, "");
-            String idCardTh = (String) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, "");
+            String serviceIP = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE);
+            int previewTh = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, 75);
+            int idCardTh = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, 60);
             int inOut = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IN_OUT, 0);
+            int keep = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_KEEP_TIMES, 6);
+            int compare = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_COMPARE_TIMES, 5);
             editSdkIP.setText(sdkIP);
             editServiceIP.setText(serviceIP);
-            editPreviewTh.setText(previewTh);
-            editIDCardTh.setText(idCardTh);
+            editPreviewTh.setText(previewTh+"");
+            editIDCardTh.setText(idCardTh+"");
             spInOut.setSelection(inOut);
+            editStrangerKeep.setText(keep+"");
+            editStrangerCompare.setText(compare+"");
             dialog = new AlertDialog.Builder(this)
                     .setIcon(R.mipmap.ic_launcher)//设置标题的图片
                     .setTitle("系统设置")//设置对话框的标题
@@ -417,9 +432,11 @@ public class SplashActivity extends ButterBaseActivity {
 
                             SharedPreferencesHelper.getInstance().put(ExtraName.SDK_IP, editSdkIP.getText().toString().trim());
                             SharedPreferencesHelper.getInstance().put(ExtraName.SERVICE_IP, editServiceIP.getText().toString().trim());
-                            SharedPreferencesHelper.getInstance().put(ExtraName.PREVIEW_THRESHOLD, editPreviewTh.getText().toString().trim());
-                            SharedPreferencesHelper.getInstance().put(ExtraName.IDCARD_THRESHOLD, editIDCardTh.getText().toString().trim());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.PREVIEW_THRESHOLD, Integer.parseInt(editPreviewTh.getText().toString().trim()));
+                            SharedPreferencesHelper.getInstance().put(ExtraName.IDCARD_THRESHOLD, Integer.parseInt(editIDCardTh.getText().toString().trim()));
                             SharedPreferencesHelper.getInstance().put(ExtraName.IN_OUT, spInOut.getSelectedItemPosition());
+                            SharedPreferencesHelper.getInstance().put(ExtraName.STRANGER_COMPARE_TIMES, Integer.parseInt(editStrangerCompare.getText().toString()));
+                            SharedPreferencesHelper.getInstance().put(ExtraName.STRANGER_KEEP_TIMES, Integer.parseInt(editStrangerKeep.getText().toString()));
                             Toast.makeText(SplashActivity.this, "保存成功,即将重新启动", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                             disposable3 = Observable.timer(2, TimeUnit.SECONDS)
@@ -436,4 +453,7 @@ public class SplashActivity extends ButterBaseActivity {
             dialog.show();
         }
     }
+
+
+
 }

@@ -16,14 +16,12 @@ public class CameraConstant {
         int getPhotoRotate();
         boolean isMirror();
         int getInterval();
-        int getFeatureQualityPass();
         int getFaceSaveTimes();
-        int getVerifyThreshold_IDCARE();
     }
 
 
     public static ICameraParam getCameraParam(){
-        return new HuaXiaDeviceCamera();
+        return new DefaultDeviceCamera();
     }
 
 
@@ -54,20 +52,13 @@ public class CameraConstant {
             return 200;
         }
 
-        @Override
-        public int getFeatureQualityPass() {
-            return 75;
-        }
+
 
         @Override
         public int getFaceSaveTimes() {
             return 6;
         }
 
-        @Override
-        public int getVerifyThreshold_IDCARE() {
-            return 60;
-        }
     }
     public static class DefaultDeviceCamera implements ICameraParam{
 
@@ -96,19 +87,12 @@ public class CameraConstant {
             return 200;
         }
 
-        @Override
-        public int getFeatureQualityPass() {
-            return 70;
-        }
 
         @Override
         public int getFaceSaveTimes() {
             return 6;
         }
 
-        @Override
-        public int getVerifyThreshold_IDCARE() {
-            return 60;
-        }
+
     }
 }

@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 import com.azyd.face.app.AppContext;
+import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.dispatcher.base.BaseRequest;
@@ -61,7 +62,7 @@ public class DemoRequest extends BaseRequest {
             }
 
             ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
-            if(ret>= CameraConstant.getCameraParam().getFeatureQualityPass()){
+            if(ret>= AppInternal.getInstance().getPreviewThreshold()){
                 return new RespBase(200,"你是"+item.getName());
 
             }

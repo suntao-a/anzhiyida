@@ -100,8 +100,8 @@ public class IDCardCaptureRequest extends BaseRequest {
         }
         ret = IdFaceSdk.IdFaceSdkFeatureCompare(mFeatureData,featureData);
 
-        if(ret < CameraConstant.getCameraParam().getVerifyThreshold_IDCARE()){
-            respBase.setCode(ErrorCode.WARING);
+        if(ret < AppInternal.getInstance().getIdcardThreshold()){
+            respBase.setCode(ErrorCode.MATCH_CASE_FAILED);
             respBase.setMessage("您的证件和本人不符");
             return respBase;
         }
@@ -116,7 +116,8 @@ public class IDCardCaptureRequest extends BaseRequest {
             detectface.recycle();
             detectface=null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            RespBase response = gateService.passRecordIDCard(URL.BASE+URL.PASS_RECORD_IDCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+            RespBase response = gateService.passRecordIDCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_IDCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                    .with("inOut", AppInternal.getInstance().getInOut())
                     .with("personName",mMyHSIDCardInfo.getPeopleName())
                     .with("personSex", Dictionaries.getSexKey(mMyHSIDCardInfo.getSex()))
                     .with("personRace",Dictionaries.getPeopleKey(mMyHSIDCardInfo.getPeople()))
@@ -135,7 +136,7 @@ public class IDCardCaptureRequest extends BaseRequest {
 
                     .with("verifyPhoto", detectfacebase64)
                     .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
-                    .with("verifyThreshold", CameraConstant.getCameraParam().getVerifyThreshold_IDCARE())
+                    .with("verifyThreshold", AppInternal.getInstance().getIdcardThreshold())
                     .with("verifyScore", ret)
 
                     .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
@@ -143,17 +144,22 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                     .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                     .create()).execute().body();
-            if(response!=null){
-                return response;
+            if (response.isSuccess()) {
+                //开门
+                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, true);
+                RespBase resp = new RespBase(ErrorCode.PLEASE_PASS, "请通行");
+                return resp;
             } else {
-                return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+                if(response.getCode()==500){
+                    return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
+                } else {
+                    return response;
+                }
             }
-
-
 
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
-            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+            return new RespBase(ErrorCode.SERVER_ERROR,"核验主机故障");
         }finally {
             FaceListManager.getInstance().put(mFeatureData);
             System.gc();

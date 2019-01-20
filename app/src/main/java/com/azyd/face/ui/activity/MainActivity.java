@@ -1,12 +1,17 @@
 package com.azyd.face.ui.activity;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,8 +20,10 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
+import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.R;
 import com.azyd.face.app.AppContext;
 import com.azyd.face.app.AppInternal;
@@ -40,6 +47,8 @@ import com.idcard.MyHSIDCardInfo;
 import com.idfacesdk.IdFaceSdk;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -78,11 +87,11 @@ public class MainActivity extends ButterBaseActivity {
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
     private HXCardReadManager mHxCardReadManager;
-    private final String willcome = "欢迎使用";
+    private final String welcome = "欢迎使用";
     private final RespBase normalResp;
 
     {
-        normalResp = new RespBase(ErrorCode.NORMAL, willcome);
+        normalResp = new RespBase(ErrorCode.NORMAL, welcome);
     }
 
     @Override
@@ -115,7 +124,7 @@ public class MainActivity extends ButterBaseActivity {
     @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
-
+//        requestWriteSettings();
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
         //启动身份证读卡器
@@ -160,8 +169,27 @@ public class MainActivity extends ButterBaseActivity {
 
             }
         });
-    }
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WELCOME, welcome));
+            }
+        }, 200);
 
+    }
+    private void requestWriteSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            //大于等于23 请求权限
+            if ( !Settings.System.canWrite(getApplicationContext())) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, 11 );
+            }
+        }else{
+            //小于23直接设置
+        }
+    }
     //处理结果
     private Observer msgObserver = new Observer<RespBase>() {
 
@@ -172,6 +200,7 @@ public class MainActivity extends ButterBaseActivity {
 
         @Override
         public void onNext(RespBase respBase) {
+
             int delayTimes = 3000;
             switch (respBase.getCode()) {
                 case ErrorCode.NORMAL:
@@ -182,9 +211,11 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    delayTimes = 3000;
+                    delayTimes = 6000;
                     break;
                 case ErrorCode.SUCCESS:
+                case ErrorCode.WELCOME:
+                case ErrorCode.PLEASE_PASS:
                     tvResult.setText(respBase.getMessage());
                     tvResult.setTextColor(Color.WHITE);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
@@ -192,10 +223,13 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
-                    delayTimes = 3000;
+//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
+                    delayTimes = 5000;
                     break;
-                case ErrorCode.WARING:
+
+                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                case ErrorCode.MATCH_CASE_FAILED:
                     tvResult.setText(respBase.getMessage());
                     tvResult.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
@@ -203,10 +237,12 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
                     clFrame.setBackgroundResource(R.drawable.main_frame);
                     ivService.setImageResource(R.drawable.icon_service);
-                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
+//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 5000;
                     break;
-                case ErrorCode.SYSTEM_ERROR:
+                case ErrorCode.CAMERA_ERROR:
+                case ErrorCode.SERVER_ERROR:
+                case ErrorCode.READ_CARD_ERROR:
                     tvResult.setText(respBase.getMessage());
                     tvResult.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
@@ -214,12 +250,43 @@ public class MainActivity extends ButterBaseActivity {
                     flDialog.setBackgroundResource(R.drawable.main_dialog_error);
                     clFrame.setBackgroundResource(R.drawable.main_frame_error);
                     ivService.setImageResource(R.drawable.icon_service_error);
-                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
+//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 5000;
                     break;
                 default:
                     break;
 
+            }
+            switch (respBase.getCode()) {
+                case ErrorCode.WELCOME:
+                    MediaPlayer.create(MainActivity.this, R.raw.welcome).start();
+                    break;
+                case ErrorCode.CAMERA_ERROR:
+                    MediaPlayer.create(MainActivity.this, R.raw.camera_error).start();
+                    break;
+                case ErrorCode.SERVER_ERROR:
+                    MediaPlayer.create(MainActivity.this, R.raw.server_error).start();
+                    break;
+                case ErrorCode.READ_CARD_ERROR:
+                    MediaPlayer.create(MainActivity.this, R.raw.card_error).start();
+                    break;
+                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
+                    MediaPlayer.create(MainActivity.this, R.raw.please_face_up_to_camera).start();
+                    break;
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                    MediaPlayer.create(MainActivity.this, R.raw.capture_failed).start();
+                    break;
+                case ErrorCode.DEVICE_NOT_REGISTERED:
+                    MediaPlayer.create(MainActivity.this, R.raw.device_not_registered).start();
+                    break;
+                case ErrorCode.MATCH_CASE_FAILED:
+                    MediaPlayer.create(MainActivity.this, R.raw.match_case_failed).start();
+                    break;
+                case ErrorCode.PLEASE_PASS:
+                    MediaPlayer.create(MainActivity.this, R.raw.please_pass).start();
+                    break;
+                default:
+                    break;
             }
             h.removeCallbacks(resetRun);
             h.postDelayed(resetRun, delayTimes);
@@ -302,7 +369,7 @@ public class MainActivity extends ButterBaseActivity {
             }
             if (msg.what == HandlerMsg.CONNECT_ERROR) {
                 //"连接失败";
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.SYSTEM_ERROR, "身份证读卡器故障"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.READ_CARD_ERROR, "读卡器故障"));
             }
             if (msg.what == HandlerMsg.READ_ERROR) {
                 //cz();
@@ -311,14 +378,26 @@ public class MainActivity extends ButterBaseActivity {
             }
             if (msg.what == HandlerMsg.READ_SUCCESS) {
                 //"读卡成功"
-                MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, getResources().getString(R.string.please_see_camera)));
+                final MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.PLEASE_FACE_UP_TO_CAMERA, getResources().getString(R.string.please_see_camera)));
                 //清空历史人脸数据
                 mIDCardCapturePublishSubject.onNext(new CameraPreview.CameraFaceData());
-                //新拍人脸
-                cameraView.takeIDCardPicture();
+                Observable.timer(2, TimeUnit.SECONDS)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Consumer<Long>() {
+                            @Override
+                            public void accept(Long aLong) {
+                                //新拍人脸
+                                if(cameraView!=null){
+                                    cameraView.takeIDCardPicture();
+                                    mCardInfoPublishSubject.onNext(ic);
+                                }
 
-                mCardInfoPublishSubject.onNext(ic);
+                            }
+                        });
+
+
 //                byte[] fp = new byte[1024];
 //                fp = ic.getFpDate();
 //                String m_FristPFInfo = "";
@@ -409,7 +488,9 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
+        IdFaceSdk.IdFaceSdkUninit();
         closeLed();
+        h.removeMessages(HandlerMsg.READ_SUCCESS);
         h.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
@@ -418,23 +499,40 @@ public class MainActivity extends ButterBaseActivity {
             cameraDisposable.dispose();
         }
         cameraView.onDestroy();
-        mHxCardReadManager.close();
+        try{
+            mHxCardReadManager.close();
+        } catch (Exception e){
+
+        }
         FaceListManager.getInstance().onDestory();
         SingleDispatcher.getInstance().quit();
-        IdFaceSdk.IdFaceSdkUninit();
-        super.onDestroy();
 
+        super.onDestroy();
+        AppContext.getInstance().exit();
     }
 
     @Override
     public void onBackPressed() {
+        IdFaceSdk.IdFaceSdkUninit();
         closeLed();
+        h.removeMessages(HandlerMsg.READ_SUCCESS);
+        h.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
         }
         if (cameraDisposable != null && !cameraDisposable.isDisposed()) {
             cameraDisposable.dispose();
         }
+        cameraView.onDestroy();
+        try{
+            mHxCardReadManager.close();
+        } catch (Exception e){
+
+        }
+
+        FaceListManager.getInstance().onDestory();
+        SingleDispatcher.getInstance().quit();
+
         super.onBackPressed();
     }
 
@@ -444,11 +542,38 @@ public class MainActivity extends ButterBaseActivity {
         takePic();
     }
 
-    private void openLed(){
-        AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(true,false);
+    private void openLed() {
+        if(AppInternal.getInstance().getIandosManager()!=null){
+            AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(true, false);
+        }
+
     }
-    private void closeLed(){
-        AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(false,false);
+
+    private void closeLed() {
+        if(AppInternal.getInstance().getIandosManager()!=null){
+            AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(false, false);
+        }
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 11)
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            {
+                //Settings.System.canWrite方法检测授权结果
+                if (Settings.System.canWrite(getApplicationContext()))
+                {
+                    Toast.makeText(MainActivity.this,"获取了权限",Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(MainActivity.this,"您拒绝了权限",Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+
     }
 //    { 0, "" },
 //    { 1, "汉" }, { 2, "蒙古" } , { 3, "回" }, { 4, "藏" }, { 5, "维吾尔" }, { 6, "苗" }, { 7, "彝" }, { 8, "壮" },

@@ -1,6 +1,7 @@
 package com.azyd.face.dispatcher.base;
 
 import com.azyd.face.app.AppContext;
+import com.azyd.face.app.AppInternal;
 import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.util.ACache;
 import com.idfacesdk.IdFaceSdk;
@@ -45,7 +46,7 @@ public class FaceListManager {
                 saveTimesMap.remove(item);
                 continue;
             }
-            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=CameraConstant.getCameraParam().getFeatureQualityPass()){
+            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>= AppInternal.getInstance().getPreviewThreshold()){
                 return true;
             }
         }

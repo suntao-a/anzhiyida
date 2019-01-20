@@ -28,7 +28,7 @@ import com.idfacesdk.FACE_DETECT_RESULT;
  * $describe$
  */
 public class PreviewRequest extends BaseRequest {
-    private final String TAG="PreviewRequest";
+    private final String TAG = "PreviewRequest";
     private byte[] mFeatureData;
     private byte[] mFaceData;
     private int width;
@@ -73,72 +73,93 @@ public class PreviewRequest extends BaseRequest {
 //                RespBase respBase = new RespBase(ErrorCode.NO_THING,null);
 //                return respBase;
 //            }
-            Integer loop = StrangerListManager.getInstance().loopReduceOnce(mFeatureData);
-            if(loop==null){
 
-            }
-            //没有,就和服务端通信比对
-            Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData,width,height);
+
+            //和服务端通信比对
+            Bitmap detectface = ImageUtils.rgb2Bitmap(mFaceData, width, height);
             String detectfacebase64 = ImageUtils.Bitmap2StrByBase64(detectface);
             detectface.recycle();
             detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            Compare1nReponse compare1nReponse = gateService.compare1N(URL.BASE+URL.FACE_COMPARE_1_N,RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
+            Compare1nReponse compare1nReponse = gateService.compare1N(AppInternal.getInstance().getServiceIP() + URL.FACE_COMPARE_1_N, RequestParam.build().with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                     .with("library", new String[]{})
                     .with("mac", AppInternal.getInstance().getIMEI())
-                    .with("threshold", CameraConstant.getCameraParam().getFeatureQualityPass())
+                    .with("threshold", AppInternal.getInstance().getPreviewThreshold())
                     .with("resultNum", 1).create()).execute().body();
             if (compare1nReponse.isSuccess() && compare1nReponse.getContent() != null && compare1nReponse.getContent().getPersonInfo().size() > 0) {
                 PersonInfo personInfo = compare1nReponse.getContent().getPersonInfo().get(0);
                 //服务端有
                 //加入队列
-                FaceListManager.getInstance().put(mFeatureData);
+//                FaceListManager.getInstance().put(mFeatureData);
 
                 //上报通行记录
-                RespBase resp = gateService.passRecordPreview(URL.BASE+URL.PASS_RECORD_PREVIEW,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                RespBase resp = gateService.passRecordPreview(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_PREVIEW, RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                        .with("inOut", AppInternal.getInstance().getInOut())
                         .with("passType", PassType.FACE)
                         .with("passPersonId", personInfo.getId())
                         .with("verifyPhoto", detectfacebase64)
                         .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
-                        .with("verifyThreshold", CameraConstant.getCameraParam().getFeatureQualityPass())
+                        .with("verifyThreshold", AppInternal.getInstance().getPreviewThreshold())
                         .with("verifyScore", personInfo.getScore())
                         .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
                         .with("passPicFaceY", mFaceDetectResult.nFaceTop / (float) height)
                         .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                         .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                         .create()).execute().body();
-                if(resp!=null){
-                    if(resp.isSuccess()){
-                        //开门
-                        AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true,true);
+
+                if (resp.isSuccess()) {
+                    //开门
+                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, true);
+                    RespBase respBase = new RespBase(ErrorCode.PLEASE_PASS, "请通行");
+                    return respBase;
 //                    Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
-                    }
-                    return resp;
                 } else {
-                    return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+                    if(resp.getCode()==500){
+                        return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
+                    } else {
+                        return resp;
+                    }
+
                 }
 
-
             } else {
-                //服务端没有，结束
+                //服务端没有此人
+                Integer count = StrangerListManager.getInstance().loopReduceOnce(mFeatureData);
+                if (count == null) {
+                    //本地没有缓存就放入陌生人缓存
+                    StrangerListManager.getInstance().put(mFeatureData);
+                } else {
+                    if (count <= 0) {
+                        //上报陌生人
+
+                        RespBase response = gateService.passRecordNoCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_NOCARD, RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                                .with("inOut", AppInternal.getInstance().getInOut())
+                                .with("passType", PassType.STRANGER)
+                                .with("verifyPhoto", detectfacebase64)
+                                .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
+                                .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
+                                .with("passPicFaceY", mFaceDetectResult.nFaceTop / (float) height)
+                                .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
+                                .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
+                                .create()).execute().body();
+                    }
+                }
 
                 FaceListManager.getInstance().put(mFeatureData);
-                RespBase respBase = new RespBase(ErrorCode.WARING,"审核未通过\n请等待");
+                RespBase respBase = new RespBase(ErrorCode.WARING, "审核未通过\n请等待");
                 return respBase;
             }
 
 
-
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
-            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+            return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
         } finally {
-            mFeatureData=null;
-            mFaceData=null;
-            mFaceDetectResult=null;
+            mFeatureData = null;
+            mFaceData = null;
+            mFaceDetectResult = null;
             System.gc();
         }
-
 
 
     }

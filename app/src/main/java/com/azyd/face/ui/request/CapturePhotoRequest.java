@@ -71,7 +71,8 @@ public class CapturePhotoRequest extends BaseRequest {
             detectface.recycle();
             detectface = null;
             final GateService gateService = ServiceGenerator.createService(GateService.class);
-            RespBase response = gateService.passRecordNoCard(URL.BASE+URL.PASS_RECORD_NOCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+            RespBase response = gateService.passRecordNoCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_NOCARD,RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                    .with("inOut", AppInternal.getInstance().getInOut())
                     .with("passType", PassType.DYNAMIC_NORMAL)
                     .with("verifyPhoto", detectfacebase64)
                     .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
@@ -80,16 +81,23 @@ public class CapturePhotoRequest extends BaseRequest {
                     .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                     .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                     .create()).execute().body();
-            if(response!=null){
-                return response;
+            if (response.isSuccess()) {
+                //开门
+                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, true);
+                RespBase resp = new RespBase(ErrorCode.PLEASE_PASS, "请通行");
+                return resp;
             } else {
-                return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+                if(response.getCode()==500){
+                    return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
+                } else {
+                    return response;
+                }
             }
 
 
         } catch (Exception e) {
             Log.e(TAG, "call: ", e);
-            return new RespBase(ErrorCode.SYSTEM_ERROR,"核验主机故障");
+            return new RespBase(ErrorCode.SERVER_ERROR,"核验主机故障");
         } finally {
             System.gc();
         }

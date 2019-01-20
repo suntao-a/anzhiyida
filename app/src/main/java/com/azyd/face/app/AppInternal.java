@@ -9,8 +9,7 @@ import android.iandos.IandosManager;
  */
 public class AppInternal {
 
-    Integer strangerDetectCount = 6;
-    int strangerFaceKeepTimes = 5;
+
     String IMEI;
     IandosManager iandosManager;
 
@@ -19,8 +18,8 @@ public class AppInternal {
     int previewThreshold;
     int idcardThreshold;
     int inOut;
-    int StrangerFaceKeepTimes;//陌生人保存缓存时长
-    int StrangerDetectCount;//陌生人检测次数上报
+    int StrangerKeepTimes;//陌生人保存缓存时长
+    int StrangerCompareTimes;//陌生人检测次数上报
 
     private static class AppInternalHolder {
         static AppInternal instance = new AppInternal();
@@ -45,24 +44,6 @@ public class AppInternal {
     public void setIandosManager(IandosManager iandosManager) {
         this.iandosManager = iandosManager;
     }
-
-    public Integer getStrangerDetectCount() {
-        return strangerDetectCount;
-    }
-
-    public void setStrangerDetectCount(Integer strangerDetectCount) {
-        strangerDetectCount = strangerDetectCount;
-    }
-
-    public int getStrangerFaceKeepTimes() {
-        return strangerFaceKeepTimes;
-    }
-
-    public void setStrangerFaceKeepTimes(int strangerFaceKeepTimes) {
-        this.strangerFaceKeepTimes = strangerFaceKeepTimes;
-    }
-
-
 
     public String getSdkIP() {
         return sdkIP;
@@ -104,7 +85,19 @@ public class AppInternal {
         this.inOut = inOut;
     }
 
-    public void setStrangerDetectCount(int strangerDetectCount) {
-        StrangerDetectCount = strangerDetectCount;
+    public int getStrangerKeepTimes() {
+        return StrangerKeepTimes;
+    }
+
+    public void setStrangerKeepTimes(int strangerKeepTimes) {
+        StrangerKeepTimes = strangerKeepTimes;
+    }
+
+    public int getStrangerCompareTimes() {
+        return StrangerCompareTimes;
+    }
+
+    public void setStrangerCompareTimes(int strangerCompareTimes) {
+        StrangerCompareTimes = strangerCompareTimes;
     }
 }

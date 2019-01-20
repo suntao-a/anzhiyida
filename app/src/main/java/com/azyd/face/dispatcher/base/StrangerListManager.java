@@ -8,7 +8,6 @@ import com.idfacesdk.IdFaceSdk;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.Map;
 
 
 public class StrangerListManager {
@@ -23,8 +22,8 @@ public class StrangerListManager {
             synchronized (FaceListManager.class){
                 if(faceListManager==null){
                     faceListManager = new StrangerListManager();
-                    faceListManager.mSaveTimes=AppInternal.getInstance().getStrangerFaceKeepTimes();
-                    faceListManager.mDetectCount = AppInternal.getInstance().getStrangerDetectCount();
+                    faceListManager.mSaveTimes=AppInternal.getInstance().getStrangerKeepTimes();
+                    faceListManager.mDetectCount = AppInternal.getInstance().getStrangerCompareTimes();
                 }
             }
         }
@@ -34,11 +33,17 @@ public class StrangerListManager {
         aCache = ACache.get(AppContext.getInstance());
     }
     public void put(byte[] data){
+        clean();
         String hashcode = String.valueOf(Arrays.hashCode(data));
         mKeyCount.put(hashcode,mDetectCount);
         aCache.put(hashcode,data,mSaveTimes);
     }
 
+    /**
+     * 判断缓存中是否同一人，不是返回null，是 返回m-1次，直到次数为0时上报陌生人
+     * @param featureData
+     * @return
+     */
     public Integer loopReduceOnce(byte[] featureData) {
         Integer count=null;
         byte[] value;
@@ -47,15 +52,29 @@ public class StrangerListManager {
             String key = i.next();
             value = aCache.getAsBinary(key);
             if(value==null){
+                //清空过期缓存
                 i.remove();
                 continue;
             }
-            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=CameraConstant.getCameraParam().getFeatureQualityPass()){
+            if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=AppInternal.getInstance().getPreviewThreshold()){
+                //同一人 次数减1，并更新缓存时间
                 count = mKeyCount.get(key);
                 mKeyCount.put(key,count--);
+                aCache.put(key,aCache.getAsBinary(key),mSaveTimes);
             }
         }
+        if(count<=0){
+            clean();
+        }
         return count;
+    }
+    public void clean(){
+        Iterator<String> i = mKeyCount.keySet().iterator();
+        while (i.hasNext()){
+            String key = i.next();
+            aCache.remove(key);
+            i.remove();
+        }
     }
     public void onDestory(){
         aCache.clear();
