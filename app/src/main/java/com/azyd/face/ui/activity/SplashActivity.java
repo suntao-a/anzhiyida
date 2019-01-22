@@ -283,12 +283,6 @@ public class SplashActivity extends ButterBaseActivity {
         return Observable.create(new ObservableOnSubscribe<RespBase>() {
             @Override
             public void subscribe(ObservableEmitter<RespBase> e) throws ServerException {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                String str;
                 RespBase response = new RespBase();
                 response.setCode(200);
                 response.setMessage("设备在线检测...");
@@ -296,22 +290,12 @@ public class SplashActivity extends ButterBaseActivity {
                 try {
                     response = ServiceGenerator.createService(GateService.class).checkRegist(AppInternal.getInstance().getServiceIP() + URL.CHECK_REGIST, RequestParam.build(1).with("mac", AppInternal.getInstance().getIMEI()).create())
                             .execute().body();
-                    if (response != null) {
-                        if (response.isSuccess()) {
-                            response.setMessage("设备在线检测成功");
-                            e.onNext(response);
-                            e.onComplete();
-                        } else {
-                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
-                        }
-
-                    } else {
-                        response = new RespBase();
-                        response.setCode(200);
-                        response.setMessage("设备在线检测...");
+                    if (response.isSuccess()) {
+                        response.setMessage("设备在线检测成功");
                         e.onNext(response);
                         e.onComplete();
-//                        throw new ServerException(404, "设备mac:" + AppInternal.getInstance().getIMEI());
+                    } else {
+                        throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                     }
                 } catch (IOException e1) {
                     throw new ServerException(ErrorCode.SERVER_ERROR, "核验主机故障");
@@ -411,11 +395,11 @@ public class SplashActivity extends ButterBaseActivity {
             int compare = (Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_COMPARE_TIMES, 5);
             editSdkIP.setText(sdkIP);
             editServiceIP.setText(serviceIP);
-            editPreviewTh.setText(previewTh+"");
-            editIDCardTh.setText(idCardTh+"");
+            editPreviewTh.setText(previewTh + "");
+            editIDCardTh.setText(idCardTh + "");
             spInOut.setSelection(inOut);
-            editStrangerKeep.setText(keep+"");
-            editStrangerCompare.setText(compare+"");
+            editStrangerKeep.setText(keep + "");
+            editStrangerCompare.setText(compare + "");
             dialog = new AlertDialog.Builder(this)
                     .setIcon(R.mipmap.ic_launcher)//设置标题的图片
                     .setTitle("系统设置")//设置对话框的标题
@@ -453,7 +437,6 @@ public class SplashActivity extends ButterBaseActivity {
             dialog.show();
         }
     }
-
 
 
 }
