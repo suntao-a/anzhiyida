@@ -1081,7 +1081,7 @@ public class CameraPreview extends TextureView {
             }
             try {
 
-                int ret = AppInternal.getInstance().getIandosManager().ICE_VFT_SetTrackParam(mICE_vf_detectParam);
+                int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_SetDetectParam(mICE_vf_detectParam);
                 long tempcurrtime = System.currentTimeMillis();
 
                 if (tempcurrtime - currentTime > mInterval) {

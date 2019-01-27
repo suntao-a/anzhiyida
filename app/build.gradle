@@ -75,4 +75,5 @@ dependencies {
     implementation files('libs/OTG.jar')
     implementation files('libs/Msc.jar')
     implementation files('libs/Sunflower.jar')
+    implementation files('libs/hxj10readeridjar.jar')
 }

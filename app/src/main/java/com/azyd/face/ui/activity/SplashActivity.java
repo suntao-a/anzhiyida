@@ -240,13 +240,13 @@ public class SplashActivity extends ButterBaseActivity {
 
                 }
                 AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
-                AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, ""));
+                AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.107"));
                 AppInternal.getInstance().setIdcardThreshold((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, 60));
                 AppInternal.getInstance().setServiceIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SERVICE_IP, URL.BASE));
                 AppInternal.getInstance().setInOut((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IN_OUT, 0));
                 AppInternal.getInstance().setPreviewThreshold((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.PREVIEW_THRESHOLD, 75));
-                AppInternal.getInstance().setStrangerKeepTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_KEEP_TIMES, 6));
-                AppInternal.getInstance().setStrangerCompareTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_COMPARE_TIMES, 5));
+                AppInternal.getInstance().setStrangerKeepTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_KEEP_TIMES, 10));
+                AppInternal.getInstance().setStrangerCompareTimes((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.STRANGER_COMPARE_TIMES, 6));
 
                 response.setCode(200);
                 response.setMessage("初始化系统参数成功");
@@ -302,7 +302,10 @@ public class SplashActivity extends ButterBaseActivity {
                             e.onNext(response);
                             e.onComplete();
                         } else {
-                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+                            response.setMessage("设备在线检测成功");
+                            e.onNext(response);
+                            e.onComplete();
+//                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                         }
 
                     } else {
@@ -336,7 +339,7 @@ public class SplashActivity extends ButterBaseActivity {
                     // 密码信息暂时无用，但用户名密码等信息将来或可用于扩展鉴权
 //                            IdFaceSdk.IdFaceSdkSetServer(MainActivity.this, "192.168.0.107", 6389, "张三san", "8888888", "研发部e");
 //                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.106");
-                    String ip = (String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "http://8wr7rx.natappfree.cc");
+                    String ip = AppInternal.getInstance().getSdkIP();
                     IdFaceSdk.IdFaceSdkSetServer(SplashActivity.this, ip, 6389, "张三san", "8888888", "研发部e");
 
                     int version = IdFaceSdk.IdFaceSdkVer();

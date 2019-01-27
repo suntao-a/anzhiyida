@@ -59,11 +59,11 @@ public class StrangerListManager {
             if(IdFaceSdk.IdFaceSdkFeatureCompare(featureData,value)>=AppInternal.getInstance().getPreviewThreshold()){
                 //同一人 次数减1，并更新缓存时间
                 count = mKeyCount.get(key);
-                mKeyCount.put(key,count--);
-                aCache.put(key,aCache.getAsBinary(key),mSaveTimes);
+                mKeyCount.put(key,--count);
+                aCache.put(key,value,mSaveTimes);
             }
         }
-        if(count<=0){
+        if(count==null||count<=0){
             clean();
         }
         return count;

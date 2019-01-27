@@ -21,5 +21,6 @@ public class ErrorCode {
     public static final int DEVICE_NOT_REGISTERED=706;
     public static final int MATCH_CASE_FAILED=707;
     public static final int PLEASE_PASS=708;
+    public static final int STRANGER_WARN=709;
 
 }

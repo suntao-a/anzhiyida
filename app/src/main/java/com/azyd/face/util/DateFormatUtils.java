@@ -16,4 +16,13 @@ public class DateFormatUtils {
         return s;
 
     }
+    public static Date StringToDate(String time,String sourseFormat) throws ParseException {
+
+        SimpleDateFormat format = new SimpleDateFormat(sourseFormat);
+        Date date;
+        date = format.parse(time);
+        return date;
+
+    }
+
 }

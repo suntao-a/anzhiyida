@@ -2,10 +2,8 @@ package com.azyd.face.ui.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -14,7 +12,6 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -23,35 +20,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alibaba.android.arouter.facade.annotation.Route;
-import com.alibaba.android.arouter.launcher.ARouter;
 import com.azyd.face.R;
 import com.azyd.face.app.AppContext;
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.RespBase;
-import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.FaceListManager;
+import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.ui.request.CapturePhotoRequest;
 import com.azyd.face.ui.request.IDCardCaptureRequest;
 import com.azyd.face.ui.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
-import com.azyd.face.util.ChineseToSpeech;
-import com.azyd.face.util.KdxfSpeechUtils;
 import com.azyd.face.view.CameraPreview;
 import com.huashi.otg.sdk.HandlerMsg;
-import com.idcard.HXCardReadManager;
+import com.idcard.HSCardReadManager;
 import com.idcard.MyHSIDCardInfo;
+import com.idcard.huaxu.HXCardReadManager;
 import com.idfacesdk.IdFaceSdk;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
@@ -124,6 +117,8 @@ public class MainActivity extends ButterBaseActivity {
     @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
+        DemoRequest demoRequest = new DemoRequest(null);
+        SingleDispatcher.getInstance().add(demoRequest);
 //        requestWriteSettings();
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
@@ -199,13 +194,15 @@ public class MainActivity extends ButterBaseActivity {
         }
 
         @Override
-        public void onNext(RespBase respBase) {
+        public void onNext(final RespBase respBase) {
 
             int delayTimes = 3000;
             switch (respBase.getCode()) {
                 case ErrorCode.NORMAL:
-                    tvResult.setText(respBase.getMessage());
-                    tvResult.setTextColor(Color.WHITE);
+                    if(!TextUtils.isEmpty(respBase.getMessage())){
+                        tvResult.setText(respBase.getMessage());
+                        tvResult.setTextColor(Color.WHITE);
+                    }
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
@@ -226,10 +223,11 @@ public class MainActivity extends ButterBaseActivity {
 //                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
                     delayTimes = 5000;
                     break;
-
+                case ErrorCode.WARING:
                 case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
                 case ErrorCode.CAPTURE_PHOTO_FAILED:
                 case ErrorCode.MATCH_CASE_FAILED:
+                case ErrorCode.STRANGER_WARN:
                     tvResult.setText(respBase.getMessage());
                     tvResult.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
@@ -254,40 +252,63 @@ public class MainActivity extends ButterBaseActivity {
                     delayTimes = 5000;
                     break;
                 default:
+
                     break;
 
             }
-            switch (respBase.getCode()) {
-                case ErrorCode.WELCOME:
-                    MediaPlayer.create(MainActivity.this, R.raw.welcome).start();
-                    break;
-                case ErrorCode.CAMERA_ERROR:
-                    MediaPlayer.create(MainActivity.this, R.raw.camera_error).start();
-                    break;
-                case ErrorCode.SERVER_ERROR:
-                    MediaPlayer.create(MainActivity.this, R.raw.server_error).start();
-                    break;
-                case ErrorCode.READ_CARD_ERROR:
-                    MediaPlayer.create(MainActivity.this, R.raw.card_error).start();
-                    break;
-                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
-                    MediaPlayer.create(MainActivity.this, R.raw.please_face_up_to_camera).start();
-                    break;
-                case ErrorCode.CAPTURE_PHOTO_FAILED:
-                    MediaPlayer.create(MainActivity.this, R.raw.capture_failed).start();
-                    break;
-                case ErrorCode.DEVICE_NOT_REGISTERED:
-                    MediaPlayer.create(MainActivity.this, R.raw.device_not_registered).start();
-                    break;
-                case ErrorCode.MATCH_CASE_FAILED:
-                    MediaPlayer.create(MainActivity.this, R.raw.match_case_failed).start();
-                    break;
-                case ErrorCode.PLEASE_PASS:
-                    MediaPlayer.create(MainActivity.this, R.raw.please_pass).start();
-                    break;
-                default:
-                    break;
-            }
+            Observable.just(respBase)
+                    .subscribeOn(Schedulers.io())
+
+                    .map(new Function<RespBase, RespBase>() {
+                        @Override
+                        public RespBase apply(RespBase respBase) throws Exception {
+                            switch (respBase.getCode()) {
+                                case ErrorCode.WELCOME:
+                                    MediaPlayer.create(MainActivity.this, R.raw.welcome).start();
+                                    break;
+                                case ErrorCode.CAMERA_ERROR:
+                                    MediaPlayer.create(MainActivity.this, R.raw.camera_error).start();
+                                    break;
+                                case ErrorCode.SERVER_ERROR:
+                                    MediaPlayer.create(MainActivity.this, R.raw.server_error).start();
+                                    break;
+                                case ErrorCode.READ_CARD_ERROR:
+                                    MediaPlayer.create(MainActivity.this, R.raw.card_error).start();
+                                    break;
+                                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
+                                    MediaPlayer.create(MainActivity.this, R.raw.please_face_up_to_camera).start();
+                                    break;
+                                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                                    MediaPlayer.create(MainActivity.this, R.raw.capture_failed).start();
+                                    break;
+                                case ErrorCode.DEVICE_NOT_REGISTERED:
+                                    MediaPlayer.create(MainActivity.this, R.raw.device_not_registered).start();
+                                    break;
+                                case ErrorCode.MATCH_CASE_FAILED:
+                                    MediaPlayer.create(MainActivity.this, R.raw.match_case_failed).start();
+                                    break;
+                                case ErrorCode.PLEASE_PASS:
+                                    MediaPlayer.create(MainActivity.this, R.raw.please_pass).start();
+                                    break;
+                                case ErrorCode.STRANGER_WARN:
+                                    MediaPlayer.create(MainActivity.this, R.raw.stranger_warn).start();
+                                    break;
+                                default:
+                                    break;
+
+                            }
+                            Thread.sleep(3000);
+                            return respBase;
+                        }
+                    }).observeOn(Schedulers.io())
+                    .subscribe(new Consumer<RespBase>() {
+                        @Override
+                        public void accept(RespBase respBase) throws Exception {
+
+                        }
+                    });
+
+
             h.removeCallbacks(resetRun);
             h.postDelayed(resetRun, delayTimes);
         }

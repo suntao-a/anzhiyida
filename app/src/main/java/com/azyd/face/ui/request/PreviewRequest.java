@@ -67,12 +67,12 @@ public class PreviewRequest extends BaseRequest {
         try {
             //对比本地列表
 
-//            boolean have = FaceListManager.getInstance().contains(mFeatureData);
-//            if (have) {
-//                //本地列表已有,放弃此次请求
-//                RespBase respBase = new RespBase(ErrorCode.NO_THING,null);
-//                return respBase;
-//            }
+            boolean have = FaceListManager.getInstance().contains(mFeatureData);
+            if (have) {
+                //本地列表已有,放弃此次请求
+                RespBase respBase = new RespBase(ErrorCode.NORMAL,null);
+                return respBase;
+            }
 
 
             //和服务端通信比对
@@ -131,7 +131,7 @@ public class PreviewRequest extends BaseRequest {
                 } else {
                     if (count <= 0) {
                         //上报陌生人
-
+                        FaceListManager.getInstance().put(mFeatureData);
                         RespBase response = gateService.passRecordNoCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_NOCARD, RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
                                 .with("inOut", AppInternal.getInstance().getInOut())
                                 .with("passType", PassType.STRANGER)
@@ -142,10 +142,13 @@ public class PreviewRequest extends BaseRequest {
                                 .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                                 .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                                 .create()).execute().body();
+                        RespBase respBase = new RespBase(ErrorCode.STRANGER_WARN, "注意陌生人");
+                        return respBase;
+
                     }
                 }
 
-                FaceListManager.getInstance().put(mFeatureData);
+//                FaceListManager.getInstance().put(mFeatureData);
                 RespBase respBase = new RespBase(ErrorCode.WARING, "审核未通过\n请等待");
                 return respBase;
             }

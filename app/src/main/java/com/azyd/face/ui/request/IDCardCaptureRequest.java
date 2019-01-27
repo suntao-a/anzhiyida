@@ -125,8 +125,10 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .with("personAddress",mMyHSIDCardInfo.getAddr())
                     .with("cardNum",mMyHSIDCardInfo.getIDCard())
                     .with("cardDepart",mMyHSIDCardInfo.getDepartment())
-                    .with("cardDayFrom",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getStrartDate(),"yyyy.MM.dd","yyyyMMdd"))
-                    .with("cardDayTo",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getEndDate(),"yyyy.MM.dd","yyyyMMdd"))
+//                    .with("cardDayFrom",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getStrartDate(),"yyyy.MM.dd","yyyyMMdd"))
+//                    .with("cardDayTo",DateFormatUtils.StringToDate(mMyHSIDCardInfo.getEndDate(),"yyyy.MM.dd","yyyyMMdd"))
+                    .with("cardDayFrom",mMyHSIDCardInfo.getStrartDate())
+                    .with("cardDayTo",mMyHSIDCardInfo.getEndDate())
 
                     .with("cardPhoto",cardfacebase64)
                     .with("cardPhotoFeature",Base64.encodeToString(featureData, Base64.DEFAULT))

@@ -32,7 +32,7 @@ import io.reactivex.schedulers.Schedulers;
  * @creat-time 2019/1/3 on 14:08
  * $describe$
  */
-public class HXCardReadManager {
+public class HSCardReadManager {
 
     String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/wltlib";// 授权目录
     HsOtgApi mHsOtgApi;
@@ -42,7 +42,7 @@ public class HXCardReadManager {
     Context mContext;
 
 
-    public HXCardReadManager(Handler handler, Context context) {
+    public HSCardReadManager(Handler handler, Context context) {
         mHandler = handler;
         mContext = context;
         mHsOtgApi = new HsOtgApi(mHandler, mContext);
