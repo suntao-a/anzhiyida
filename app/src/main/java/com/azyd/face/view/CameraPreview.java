@@ -97,7 +97,7 @@ public class CameraPreview extends TextureView {
     private static final int STATE_WAITING_PRE_CAPTURE = 2;//拍照中
     private static final int STATE_WAITING_NON_PRE_CAPTURE = 3;//其它状态
     private static final int STATE_PICTURE_TAKEN = 4;//拍照完毕
-
+    private boolean runPreviewReq = true;//控制preview reqest 的开启
     private boolean mFlashSupported;
     private int mPhotoAngle = -90;
     private int mInterval = 5000;
@@ -132,6 +132,7 @@ public class CameraPreview extends TextureView {
     boolean isFront = true;
     Disposable previewDisposable;
     ICE_VF_DetectParam mICE_vf_detectParam;
+
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
@@ -164,10 +165,10 @@ public class CameraPreview extends TextureView {
             mSwitchAspect = CameraConstant.getCameraParam().isViewNeedSwitchAspect();
             mCameraId = CameraConstant.getCameraParam().getCameraId();
         }
-        options=new BitmapFactory.Options();
+        options = new BitmapFactory.Options();
         options.inSampleSize = 1;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
-        mICE_vf_detectParam = new ICE_VF_DetectParam(ICE_VF_DetectParam.ICE_PICTURE_TYPE_VID,640,480);
+        mICE_vf_detectParam = new ICE_VF_DetectParam(ICE_VF_DetectParam.ICE_PICTURE_TYPE_VID, 640, 480);
         mICE_vf_detectParam.setSensitive(1);
         mICE_vf_detectParam.setEvalFace(1);
         mICE_vf_detectParam.setTracking(1);
@@ -192,7 +193,7 @@ public class CameraPreview extends TextureView {
         CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR, "摄像机故障"));
                 return;
             }
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -208,7 +209,7 @@ public class CameraPreview extends TextureView {
             manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
         } catch (Exception e) {
             e.printStackTrace();
-            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
+            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR, "摄像机故障"));
         }
     }
 
@@ -260,7 +261,7 @@ public class CameraPreview extends TextureView {
                     CameraMetadata.STATISTICS_FACE_DETECT_MODE_FULL);
             // 我们创建一个 CameraCaptureSession 来进行相机预览
 
-            mCameraDevice.createCaptureSession(Arrays.asList(surface,mIdCardCaptureImageReader.getSurface(), mCaptureImageReader.getSurface(), mImagePreviewReader.getSurface()),
+            mCameraDevice.createCaptureSession(Arrays.asList(surface, mIdCardCaptureImageReader.getSurface(), mCaptureImageReader.getSurface(), mImagePreviewReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
@@ -290,9 +291,9 @@ public class CameraPreview extends TextureView {
                     }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        } catch (IllegalStateException e){
+        } catch (IllegalStateException e) {
             e.printStackTrace();
-            if(activity!=null){
+            if (activity != null) {
                 onResume(activity);
             }
 
@@ -713,7 +714,7 @@ public class CameraPreview extends TextureView {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR,"摄像机故障"));
+            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAMERA_ERROR, "摄像机故障"));
         }
     }
 
@@ -838,6 +839,7 @@ public class CameraPreview extends TextureView {
             e.printStackTrace();
         }
     }
+
     /**
      * 为idcard拍摄静态图片
      */
@@ -873,6 +875,7 @@ public class CameraPreview extends TextureView {
             e.printStackTrace();
         }
     }
+
     /**
      * 运行preCapture序列来捕获静止图像
      */
@@ -900,6 +903,18 @@ public class CameraPreview extends TextureView {
         }
     }
 
+    public void stopPreviewReq() {
+        runPreviewReq = false;
+    }
+
+    public void startPreviewReq() {
+        runPreviewReq = true;
+    }
+
+    public boolean canPreviewReq() {
+        return runPreviewReq;
+    }
+
     /**
      * ImageReader的回调对象
      */
@@ -909,6 +924,7 @@ public class CameraPreview extends TextureView {
         @Override
         public void onImageAvailable(ImageReader reader) {
             try {
+
                 System.gc();
 //                File parent = new File(mPath);
 //                if(!parent.exists()){
@@ -933,10 +949,10 @@ public class CameraPreview extends TextureView {
                 int width = faceImg.getWidth();
                 int height = faceImg.getHeight();
                 byte[] faceRGB = ImageUtils.bitmap2RGB(faceImg);
-                if(!bitmap.isRecycled()){
+                if (!bitmap.isRecycled()) {
                     bitmap.recycle();
                 }
-                if(!faceImg.isRecycled()){
+                if (!faceImg.isRecycled()) {
                     faceImg.recycle();
                 }
                 //识别
@@ -947,17 +963,36 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
                 if (ret <= 0) {
                     //检测人脸失败
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
+
                     return;
                 }
 
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
                 if (ret != 0) {
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
                     return;
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
                     return;
                 }
                 mSubject.onNext(new WeakReference<>(new CameraFaceData()
@@ -969,6 +1004,8 @@ public class CameraPreview extends TextureView {
                         .setImageWidth(width)));
             } catch (Exception e) {
                 Log.e(TAG, e.getMessage(), e);
+            } finally {
+
             }
 
         }
@@ -982,6 +1019,7 @@ public class CameraPreview extends TextureView {
         @Override
         public void onImageAvailable(ImageReader reader) {
             try {
+
                 System.gc();
                 Image image = reader.acquireLatestImage();
                 ByteBuffer buffer = image.getPlanes()[0].getBuffer();
@@ -991,20 +1029,20 @@ public class CameraPreview extends TextureView {
                 Bitmap bitmap = null;
                 //旋转、镜像
                 Bitmap faceImg = null;
-                byte[] faceRGB=null;
-                int finalwidth=0;
-                int finalheight=0;
+                byte[] faceRGB = null;
+                int finalwidth = 0;
+                int finalheight = 0;
                 if (mPhotoAngle == 0 && !mMirror) {
 
                     SoftReference softRef = new SoftReference(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
-                    bitmap = (Bitmap)softRef.get();
-                    if(bitmap==null){
+                    bitmap = (Bitmap) softRef.get();
+                    if (bitmap == null) {
                         return;
                     }
                     faceRGB = ImageUtils.bitmap2RGB(bitmap);
                     finalwidth = bitmap.getWidth();
                     finalheight = bitmap.getHeight();
-                    if(!bitmap.isRecycled()){
+                    if (!bitmap.isRecycled()) {
                         bitmap.recycle();
                         bitmap = null;
 
@@ -1015,14 +1053,14 @@ public class CameraPreview extends TextureView {
                     faceRGB = ImageUtils.bitmap2RGB(faceImg);
                     finalwidth = faceImg.getWidth();
                     finalheight = faceImg.getHeight();
-                    if(!bitmap.isRecycled()){
+                    if (!bitmap.isRecycled()) {
                         bitmap.recycle();
                         bitmap = null;
 
                     }
-                    if(!faceImg.isRecycled()){
+                    if (!faceImg.isRecycled()) {
                         faceImg.recycle();
-                        faceImg=null;
+                        faceImg = null;
                     }
                 }
 
@@ -1034,20 +1072,37 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, finalwidth, finalheight, faceDetectResult);
                 if (ret <= 0) {
                     //检测人脸失败
-
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
                     return;
                 }
 
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, finalwidth, finalheight, faceDetectResult, featureData);
                 if (ret != 0) {
 
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
                     return;
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
 
-                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED,getContext().getResources().getString(R.string.capture_photo_failed)));
+                    Observable.timer(2, TimeUnit.SECONDS)
+                            .subscribe(new Consumer<Long>() {
+                                @Override
+                                public void accept(Long aLong) {
+                                    SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                                }
+                            });
                     return;
                 }
                 mSubject.onNext(new WeakReference<>(new CameraFaceData()
@@ -1059,6 +1114,15 @@ public class CameraPreview extends TextureView {
                         .setImageWidth(finalwidth)));
             } catch (Exception e) {
                 Log.e(TAG, e.getMessage(), e);
+                Observable.timer(2, TimeUnit.SECONDS)
+                        .subscribe(new Consumer<Long>() {
+                            @Override
+                            public void accept(Long aLong) {
+                                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.CAPTURE_PHOTO_FAILED, getContext().getResources().getString(R.string.capture_photo_failed)));
+                            }
+                        });
+            } finally {
+
             }
 
         }
@@ -1091,30 +1155,30 @@ public class CameraPreview extends TextureView {
                     SoftReference<byte[]> softData = new SoftReference(new byte[buffer.remaining()]);
                     buffer.get(softData.get());
                     image.close();
-                    image=null;
+                    image = null;
                     buffer.clear();
-                    buffer=null;
+                    buffer = null;
                     Observable.just(softData)
                             .map(new Function<SoftReference<byte[]>, FACE_DETECT_RESULT>() {
                                 @Override
                                 public FACE_DETECT_RESULT apply(SoftReference<byte[]> softBytes) {
-                                    Bitmap bitmap=null;
+                                    Bitmap bitmap = null;
                                     //旋转、镜像
                                     Bitmap faceImg = null;
                                     byte[] faceRGB = null;
-                                    int finalwidth=0;
-                                    int finalheight=0;
+                                    int finalwidth = 0;
+                                    int finalheight = 0;
                                     if (mPhotoAngle == 0 && !mMirror) {
 
                                         SoftReference softRef = new SoftReference(BitmapFactory.decodeByteArray(softBytes.get(), 0, softBytes.get().length));
-                                        bitmap = (Bitmap)softRef.get();
-                                        if(bitmap==null){
+                                        bitmap = (Bitmap) softRef.get();
+                                        if (bitmap == null) {
                                             return null;
                                         }
                                         finalwidth = bitmap.getWidth();
                                         finalheight = bitmap.getHeight();
                                         faceRGB = ImageUtils.bitmap2RGB(bitmap);
-                                        if(!bitmap.isRecycled()){
+                                        if (!bitmap.isRecycled()) {
                                             bitmap.recycle();
                                             bitmap = null;
 
@@ -1126,18 +1190,18 @@ public class CameraPreview extends TextureView {
                                         faceRGB = ImageUtils.bitmap2RGB(faceImg);
                                         finalwidth = faceImg.getWidth();
                                         finalheight = faceImg.getHeight();
-                                        if(!bitmap.isRecycled()){
+                                        if (!bitmap.isRecycled()) {
                                             bitmap.recycle();
                                             bitmap = null;
 
                                         }
-                                        if(!faceImg.isRecycled()){
+                                        if (!faceImg.isRecycled()) {
                                             faceImg.recycle();
-                                            faceImg=null;
+                                            faceImg = null;
                                         }
                                     }
                                     softBytes.clear();
-                                    if(faceRGB==null){
+                                    if (faceRGB == null) {
                                         return null;
                                     }
 
@@ -1161,13 +1225,16 @@ public class CameraPreview extends TextureView {
                                     if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
                                         return null;
                                     }
-                                    mSubject.onNext(new WeakReference<>(new CameraFaceData()
-                                            .setType(CameraFaceData.PREVIEW)
-                                            .setFaceData(faceRGB)
-                                            .setFeatureData(featureData)
-                                            .setFaceDetectResult(faceDetectResult)
-                                            .setImageHeight(finalheight)
-                                            .setImageWidth(finalwidth)));
+                                    if (canPreviewReq()) {
+                                        mSubject.onNext(new WeakReference<>(new CameraFaceData()
+                                                .setType(CameraFaceData.PREVIEW)
+                                                .setFaceData(faceRGB)
+                                                .setFeatureData(featureData)
+                                                .setFaceDetectResult(faceDetectResult)
+                                                .setImageHeight(finalheight)
+                                                .setImageWidth(finalwidth)));
+                                    }
+
                                     Log.e(TAG, "Left:" + faceDetectResult.nFaceLeft + " _Right:" + faceDetectResult.nFaceRight + "_Top:" + faceDetectResult.nFaceTop + "_Bottom:" + faceDetectResult.nFaceBottom);
                                     float widthRate = getWidth() / (float) finalwidth;
                                     float heightRate = getHeight() / (float) finalheight;
@@ -1217,13 +1284,13 @@ public class CameraPreview extends TextureView {
 //
 //        }
 //    }
-
     public void onDestroy() {
-        if(previewDisposable!=null&&!previewDisposable.isDisposed()){
+        if (previewDisposable != null && !previewDisposable.isDisposed()) {
             previewDisposable.dispose();
         }
     }
-    private Observer drawFaceObserver = new Observer<FACE_DETECT_RESULT>(){
+
+    private Observer drawFaceObserver = new Observer<FACE_DETECT_RESULT>() {
 
         @Override
         public void onSubscribe(Disposable d) {
@@ -1232,11 +1299,11 @@ public class CameraPreview extends TextureView {
 
         @Override
         public void onNext(FACE_DETECT_RESULT face_detect_result) {
-            if(mSurfaceHolder==null){
+            if (mSurfaceHolder == null) {
                 return;
             }
             Canvas canvas = mSurfaceHolder.lockCanvas();
-            if(canvas==null){
+            if (canvas == null) {
                 return;
             }
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
@@ -1258,11 +1325,11 @@ public class CameraPreview extends TextureView {
 
         @Override
         public void onError(Throwable e) {
-            if(mSurfaceHolder==null){
+            if (mSurfaceHolder == null) {
                 return;
             }
             Canvas canvas = mSurfaceHolder.lockCanvas();
-            if(canvas==null){
+            if (canvas == null) {
                 return;
             }
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR); //清楚掉上一次的画框。
@@ -1274,6 +1341,7 @@ public class CameraPreview extends TextureView {
 
         }
     };
+
     public static class CameraFaceData {
         public final static int PREVIEW = 0;
         public final static int CAPTURE = 1;

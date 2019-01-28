@@ -38,7 +38,7 @@ public class HXCardReadManager {
 
     // 读卡
     private HxJ10ReaderID mReaderID = null;
-
+    private boolean canLoop=true;
     // 连续读卡计数
     private int ReadIDCount = 0;
     Integer isConnected = -1;
@@ -60,6 +60,7 @@ public class HXCardReadManager {
         if (mbIsOpened) {
             return;
         }
+        startLoop();
         Observable.fromCallable(new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
@@ -95,6 +96,10 @@ public class HXCardReadManager {
                 .subscribe(new Consumer<Long>() {
                     @Override
                     public void accept(Long aLong) throws Exception {
+                        if(!canLoop()){
+                            return;
+                        }
+
                         String ErrMsg = null;
                         String ResultMsg = null;
                         Bitmap ResultPicture = null;
@@ -107,6 +112,7 @@ public class HXCardReadManager {
                             return;
                         }
                         try {
+                            stopLoop();
                             ////////////////////////////////////////////////////////
                             // 显示读取信息到界面
 
@@ -197,7 +203,7 @@ public class HXCardReadManager {
                             msg.what = HandlerMsg.READ_ERROR;
                             mHandler.sendMessage(msg);
                         }
-                        Thread.sleep(3000);
+
 
                     }
                 }, new Consumer<Throwable>() {
@@ -277,5 +283,13 @@ public class HXCardReadManager {
         }
 
     }
-
+    public void stopLoop(){
+        canLoop=false;
+    }
+    public void startLoop(){
+        canLoop=true;
+    }
+    public boolean canLoop(){
+        return canLoop;
+    }
 }

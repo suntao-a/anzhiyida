@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -41,6 +42,7 @@ import com.idcard.MyHSIDCardInfo;
 import com.idcard.huaxu.HXCardReadManager;
 import com.idfacesdk.IdFaceSdk;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +78,7 @@ public class MainActivity extends ButterBaseActivity {
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
     TextView btnCustom;
+    MediaPlayer mediaPlayer;
     Disposable msgDisposable, cameraDisposable;
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
     private PublishSubject<CameraPreview.CameraFaceData> mIDCardCapturePublishSubject;
@@ -99,7 +102,7 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     protected void initView(Bundle savedInstanceState) {
-
+        mediaPlayer = new MediaPlayer();
         //处于顶层
         surfaceview.setZOrderOnTop(true);
         //设置surface为透明
@@ -123,7 +126,7 @@ public class MainActivity extends ButterBaseActivity {
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
         //启动身份证读卡器
-        mHxCardReadManager = new HXCardReadManager(h, this);
+        mHxCardReadManager = new HXCardReadManager(idCardHandler, this);
         mHxCardReadManager.start();
         //启动单任务执行中心
         try {
@@ -164,7 +167,7 @@ public class MainActivity extends ButterBaseActivity {
 
             }
         });
-        h.postDelayed(new Runnable() {
+        idCardHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WELCOME, welcome));
@@ -195,7 +198,60 @@ public class MainActivity extends ButterBaseActivity {
 
         @Override
         public void onNext(final RespBase respBase) {
-
+            idCardHandler.removeCallbacks(resetRun);
+            Uri speekUri = null;
+            switch (respBase.getCode()) {
+                case ErrorCode.WELCOME:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.welcome);
+                    break;
+                case ErrorCode.CAMERA_ERROR:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.camera_error);
+                    break;
+                case ErrorCode.SERVER_ERROR:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.server_error);
+                    break;
+                case ErrorCode.READ_CARD_ERROR:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.card_error);
+                    break;
+                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.please_face_up_to_camera);
+                    break;
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.capture_failed);
+                    break;
+                case ErrorCode.DEVICE_NOT_REGISTERED:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.device_not_registered);
+                    break;
+                case ErrorCode.MATCH_CASE_FAILED:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.match_case_failed);
+                    break;
+                case ErrorCode.PLEASE_PASS:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.please_pass);
+                    break;
+                case ErrorCode.STRANGER_WARN:
+                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.stranger_warn);
+                    break;
+                default:
+                    break;
+            }
+            if(speekUri!=null){
+                try {
+                    mediaPlayer.reset();
+                    mediaPlayer.setDataSource(MainActivity.this,speekUri);
+                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                    // 通过异步的方式装载媒体资源
+                    mediaPlayer.prepareAsync();
+                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mp) {
+                            // 装载完毕回调
+                            mediaPlayer.start();
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             int delayTimes = 3000;
             switch (respBase.getCode()) {
                 case ErrorCode.NORMAL:
@@ -256,61 +312,22 @@ public class MainActivity extends ButterBaseActivity {
                     break;
 
             }
-            Observable.just(respBase)
-                    .subscribeOn(Schedulers.io())
+            switch (respBase.getCode()) {
+                case ErrorCode.READ_CARD_ERROR:
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                case ErrorCode.EVENT_IDCARD_REQUEST_COMPLETED:
+                case ErrorCode.EVENT_CAPTURE_REQUEST_COMPLETED:
+                    mHxCardReadManager.startLoop();
+                    cameraView.startPreviewReq();
+                    break;
+                default:
 
-                    .map(new Function<RespBase, RespBase>() {
-                        @Override
-                        public RespBase apply(RespBase respBase) throws Exception {
-                            switch (respBase.getCode()) {
-                                case ErrorCode.WELCOME:
-                                    MediaPlayer.create(MainActivity.this, R.raw.welcome).start();
-                                    break;
-                                case ErrorCode.CAMERA_ERROR:
-                                    MediaPlayer.create(MainActivity.this, R.raw.camera_error).start();
-                                    break;
-                                case ErrorCode.SERVER_ERROR:
-                                    MediaPlayer.create(MainActivity.this, R.raw.server_error).start();
-                                    break;
-                                case ErrorCode.READ_CARD_ERROR:
-                                    MediaPlayer.create(MainActivity.this, R.raw.card_error).start();
-                                    break;
-                                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
-                                    MediaPlayer.create(MainActivity.this, R.raw.please_face_up_to_camera).start();
-                                    break;
-                                case ErrorCode.CAPTURE_PHOTO_FAILED:
-                                    MediaPlayer.create(MainActivity.this, R.raw.capture_failed).start();
-                                    break;
-                                case ErrorCode.DEVICE_NOT_REGISTERED:
-                                    MediaPlayer.create(MainActivity.this, R.raw.device_not_registered).start();
-                                    break;
-                                case ErrorCode.MATCH_CASE_FAILED:
-                                    MediaPlayer.create(MainActivity.this, R.raw.match_case_failed).start();
-                                    break;
-                                case ErrorCode.PLEASE_PASS:
-                                    MediaPlayer.create(MainActivity.this, R.raw.please_pass).start();
-                                    break;
-                                case ErrorCode.STRANGER_WARN:
-                                    MediaPlayer.create(MainActivity.this, R.raw.stranger_warn).start();
-                                    break;
-                                default:
-                                    break;
-
-                            }
-                            Thread.sleep(3000);
-                            return respBase;
-                        }
-                    }).observeOn(Schedulers.io())
-                    .subscribe(new Consumer<RespBase>() {
-                        @Override
-                        public void accept(RespBase respBase) throws Exception {
-
-                        }
-                    });
+                    break;
+            }
 
 
-            h.removeCallbacks(resetRun);
-            h.postDelayed(resetRun, delayTimes);
+
+            idCardHandler.postDelayed(resetRun, delayTimes);
         }
 
         @Override
@@ -345,12 +362,12 @@ public class MainActivity extends ButterBaseActivity {
             }
             switch (cameraFaceData.getType()) {
                 case CameraPreview.CameraFaceData.PREVIEW:
-                    PreviewRequest request = new PreviewRequest();
-                    request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                            .setFeatureData(cameraFaceData.getFeatureData())
-                            .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                            .setFaceData(cameraFaceData.getFaceData());
-                    SingleDispatcher.getInstance().add(request);
+                        PreviewRequest request = new PreviewRequest();
+                        request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                                .setFeatureData(cameraFaceData.getFeatureData())
+                                .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                                .setFaceData(cameraFaceData.getFaceData());
+                        SingleDispatcher.getInstance().add(request);
                     break;
                 case CameraPreview.CameraFaceData.CAPTURE:
                     CapturePhotoRequest captureRequest = new CapturePhotoRequest();
@@ -378,15 +395,11 @@ public class MainActivity extends ButterBaseActivity {
 
         }
     };
-    Handler h = new Handler() {
+    Handler idCardHandler = new Handler() {
         @Override
         public void handleMessage(android.os.Message msg) {
             if (msg.what == 99 || msg.what == 100) {
                 //statu.setText((String)msg.obj);
-            }
-            //第一次授权时候的判断是利用handler判断，授权过后就不用这个判断了
-            if (msg.what == HandlerMsg.CONNECT_SUCCESS) {
-                //"连接成功");
             }
             if (msg.what == HandlerMsg.CONNECT_ERROR) {
                 //"连接失败";
@@ -395,14 +408,16 @@ public class MainActivity extends ButterBaseActivity {
             if (msg.what == HandlerMsg.READ_ERROR) {
                 //cz();
                 //"卡认证失败"
-                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WARING, "卡认证失败"));
+                SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.READ_CARD_ERROR, "卡认证失败"));
             }
+            //"读卡成功"
             if (msg.what == HandlerMsg.READ_SUCCESS) {
-                //"读卡成功"
-                final MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
                 SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.PLEASE_FACE_UP_TO_CAMERA, getResources().getString(R.string.please_see_camera)));
-                //清空历史人脸数据
-                mIDCardCapturePublishSubject.onNext(new CameraPreview.CameraFaceData());
+
+                cameraView.stopPreviewReq();//停止处理人像识别通行
+                SingleDispatcher.getInstance().clean();//清空在运行的请求，执行接下来的身份证采集头像请求
+                final MyHSIDCardInfo ic = (MyHSIDCardInfo) msg.obj;
+                mIDCardCapturePublishSubject.onNext(new CameraPreview.CameraFaceData());//清空历史人脸数据
                 Observable.timer(2, TimeUnit.SECONDS)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
@@ -503,16 +518,22 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     public void takePic() {
+        cameraView.stopPreviewReq();
         cameraView.takePicture();
     }
 
 
     @Override
     public void onDestroy() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
         IdFaceSdk.IdFaceSdkUninit();
         closeLed();
-        h.removeMessages(HandlerMsg.READ_SUCCESS);
-        h.removeCallbacks(resetRun);
+        idCardHandler.removeMessages(HandlerMsg.READ_SUCCESS);
+        idCardHandler.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
         }
@@ -536,8 +557,8 @@ public class MainActivity extends ButterBaseActivity {
     public void onBackPressed() {
         IdFaceSdk.IdFaceSdkUninit();
         closeLed();
-        h.removeMessages(HandlerMsg.READ_SUCCESS);
-        h.removeCallbacks(resetRun);
+        idCardHandler.removeMessages(HandlerMsg.READ_SUCCESS);
+        idCardHandler.removeCallbacks(resetRun);
         if (msgDisposable != null && !msgDisposable.isDisposed()) {
             msgDisposable.dispose();
         }

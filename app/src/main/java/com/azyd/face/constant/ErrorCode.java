@@ -10,7 +10,8 @@ public class ErrorCode {
     public static final int SUCCESS=200;
     public static final int NORMAL=100;
     public static final int WARING=101;
-
+    public static final int EVENT_IDCARD_REQUEST_COMPLETED=102;
+    public static final int EVENT_CAPTURE_REQUEST_COMPLETED=103;
 
     public static final int WELCOME=700;
     public static final int CAMERA_ERROR=701;

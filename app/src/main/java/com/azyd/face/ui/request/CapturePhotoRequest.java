@@ -9,12 +9,18 @@ import com.azyd.face.base.RespBase;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.constant.URL;
+import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.net.ServiceGenerator;
 import com.azyd.face.ui.service.GateService;
 import com.azyd.face.util.ImageUtils;
 import com.azyd.face.util.RequestParam;
 import com.idfacesdk.FACE_DETECT_RESULT;
+
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.functions.Consumer;
 
 /**
  * @author suntao
@@ -100,6 +106,14 @@ public class CapturePhotoRequest extends BaseRequest {
             return new RespBase(ErrorCode.SERVER_ERROR,"核验主机故障");
         } finally {
             System.gc();
+
+            Observable.timer(2, TimeUnit.SECONDS)
+                    .subscribe(new Consumer<Long>() {
+                        @Override
+                        public void accept(Long aLong) {
+                            SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.EVENT_CAPTURE_REQUEST_COMPLETED,null));
+                        }
+                    });
         }
 
     }

@@ -142,13 +142,12 @@ public class PreviewRequest extends BaseRequest {
                                 .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
                                 .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                                 .create()).execute().body();
+                        FaceListManager.getInstance().put(mFeatureData);
                         RespBase respBase = new RespBase(ErrorCode.STRANGER_WARN, "注意陌生人");
                         return respBase;
 
                     }
                 }
-
-//                FaceListManager.getInstance().put(mFeatureData);
                 RespBase respBase = new RespBase(ErrorCode.WARING, "审核未通过\n请等待");
                 return respBase;
             }
@@ -162,6 +161,11 @@ public class PreviewRequest extends BaseRequest {
             mFaceData = null;
             mFaceDetectResult = null;
             System.gc();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
 

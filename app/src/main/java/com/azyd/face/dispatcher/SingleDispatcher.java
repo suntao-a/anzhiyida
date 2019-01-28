@@ -99,7 +99,11 @@ public class SingleDispatcher extends Thread {
         mExecutor.shutdownNow();
         interrupt();
     }
-
+    public void clean(){
+        if(mCurrentfuture!=null){
+            mCurrentfuture.cancel(true);
+        }
+    }
     @Override
     public void run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
