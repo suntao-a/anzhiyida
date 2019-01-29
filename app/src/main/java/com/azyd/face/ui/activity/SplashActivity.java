@@ -296,10 +296,10 @@ public class SplashActivity extends ButterBaseActivity {
                             e.onNext(response);
                             e.onComplete();
                         } else {
-                            response.setMessage("设备在线检测成功");
-                            e.onNext(response);
-                            e.onComplete();
-//                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
+//                            response.setMessage("设备在线检测成功");
+//                            e.onNext(response);
+//                            e.onComplete();
+                            throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                         }
 
                     } else {
