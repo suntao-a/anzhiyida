@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Face</string>
     <string name="splash_bottom_tip">安智易达智能科技有限公司</string>
-    <string name="main_top_tip">安智易达小区人像识别系统</string>
+    <string name="main_top_tip">江苏大学人像系统</string>
     <string name="permissions_content">当前应用缺少%s权限。\n\n请点击\"设置\"-\"权限\"-打开所需权限。</string>
     <string name="please_see_camera">请正视屏幕</string>
     <string name="capture_photo_failed">照片采集失败</string>

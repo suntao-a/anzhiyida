@@ -159,9 +159,19 @@ public class IDCardCaptureRequest extends BaseRequest {
                     .create()).execute().body();
             if (response.isSuccess()) {
                 //开门
-                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, false);
-                Thread.sleep(500);
-                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(false, false);
+                Observable.timer(500, TimeUnit.MILLISECONDS)
+                        .subscribe(new Consumer<Long>() {
+                            @Override
+                            public void accept(Long aLong) {
+                                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, false);
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(false, false);
+                            }
+                        });
                 RespBase resp = new RespBase(ErrorCode.PLEASE_PASS, "请通行");
                 return resp;
             } else {

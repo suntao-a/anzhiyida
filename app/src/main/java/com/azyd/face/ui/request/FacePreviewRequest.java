@@ -1,17 +1,16 @@
 package com.azyd.face.ui.request;
 
-
 import android.graphics.Bitmap;
 import android.util.Base64;
 import android.util.Log;
 
+import com.azyd.face.R;
+import com.azyd.face.app.AppContext;
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.RespBase;
-import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.PassType;
 import com.azyd.face.constant.URL;
-import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.BaseRequest;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.dispatcher.base.StrangerListManager;
@@ -28,12 +27,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 
-/**
- * @author suntao
- * @creat-time 2018/12/4 on 17:13
- * $describe$
- */
-public class PreviewRequest extends BaseRequest {
+public class FacePreviewRequest extends BaseRequest {
     private final String TAG = "PreviewRequest";
     private byte[] mFeatureData;
     private byte[] mFaceData;
@@ -41,27 +35,27 @@ public class PreviewRequest extends BaseRequest {
     private int height;
     private FACE_DETECT_RESULT mFaceDetectResult;
 
-    public PreviewRequest() {
+    public FacePreviewRequest() {
         super(0);
 
     }
 
-    public PreviewRequest setFeatureData(byte[] featureData) {
+    public FacePreviewRequest setFeatureData(byte[] featureData) {
         mFeatureData = featureData;
         return this;
     }
 
-    public PreviewRequest setFaceData(byte[] faceData) {
+    public FacePreviewRequest setFaceData(byte[] faceData) {
         mFaceData = faceData;
         return this;
     }
 
-    public PreviewRequest setFaceDetectResult(FACE_DETECT_RESULT detectResult) {
+    public FacePreviewRequest setFaceDetectResult(FACE_DETECT_RESULT detectResult) {
         mFaceDetectResult = detectResult;
         return this;
     }
 
-    public PreviewRequest setImageSize(int w, int h) {
+    public FacePreviewRequest setImageSize(int w, int h) {
         width = w;
         height = h;
         return this;
@@ -89,7 +83,7 @@ public class PreviewRequest extends BaseRequest {
                             .with("feature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
                             .with("library", new String[]{})
                             .with("mac", AppInternal.getInstance().getIMEI())
-                            .with("threshold", AppInternal.getInstance().getPreviewThreshold())
+                            .with("threshold", 0)
                             .with("resultNum", 1).create()).execute().body();
             if (compare1nReponse.isSuccess() && compare1nReponse.getContent() != null && compare1nReponse.getContent().getPersonInfo().size() > 0) {
                 PersonInfo personInfo = compare1nReponse.getContent().getPersonInfo().get(0);
@@ -111,8 +105,6 @@ public class PreviewRequest extends BaseRequest {
                                 .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
                                 .create()).execute().body();
                 if (resp.isSuccess()) {
-                    //开门
-                    //Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
 
                     Observable.timer(500, TimeUnit.MILLISECONDS)
                             .subscribe(new Consumer<Long>() {
@@ -133,35 +125,43 @@ public class PreviewRequest extends BaseRequest {
                     if (resp.getCode() == 500) {
                         return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
                     } else {
-                        return resp;
-                    }
-                }
-            } else {
-                //服务端没有此人
-                Integer count = StrangerListManager.getInstance().loopReduceOnce(mFeatureData);
-                if (count == null) {
-                    //本地没有缓存就放入陌生人缓存
-                    StrangerListManager.getInstance().put(mFeatureData);
-                } else {
-                    if (count <= 0) {
-                        //上报陌生人
-                        FaceListManager.getInstance().put(mFeatureData);
-                        RespBase response = gateService.passRecordNoCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_NOCARD, RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
-                                .with("inOut", AppInternal.getInstance().getInOut())
-                                .with("passType", PassType.STRANGER)
-                                .with("verifyPhoto", detectfacebase64)
-                                .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
-                                .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
-                                .with("passPicFaceY", mFaceDetectResult.nFaceTop / (float) height)
-                                .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
-                                .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
-                                .create()).execute().body();
-                        FaceListManager.getInstance().put(mFeatureData);
-                        RespBase respBase = new RespBase(ErrorCode.STRANGER_WARN, "注意陌生人");
-                        return respBase;
+                        //不给通行
+                        //陌生人逻辑
+                        Integer count = StrangerListManager.getInstance().loopReduceOnce(mFeatureData);
+                        if (count == null) {
+                            //本地没有缓存就放入陌生人缓存
+                            StrangerListManager.getInstance().put(mFeatureData);
+                        } else {
+                            if (count <= 0) {
+                                //上报陌生人
+                                FaceListManager.getInstance().put(mFeatureData);
+                                RespBase response = gateService.passRecordNoCard(AppInternal.getInstance().getServiceIP() + URL.PASS_RECORD_NOCARD, RequestParam.build().with("mac", AppInternal.getInstance().getIMEI())
+                                        .with("inOut", AppInternal.getInstance().getInOut())
+                                        .with("passType", PassType.STRANGER)
+                                        .with("verifyPhoto", detectfacebase64)
+                                        .with("verifyFeature", Base64.encodeToString(mFeatureData, Base64.DEFAULT))
+                                        .with("passPicFaceX", mFaceDetectResult.nFaceLeft / (float) width)
+                                        .with("passPicFaceY", mFaceDetectResult.nFaceTop / (float) height)
+                                        .with("passPicFaceWidth", (mFaceDetectResult.nFaceRight - mFaceDetectResult.nFaceLeft) / (float) width)
+                                        .with("passPicFaceHeight", (mFaceDetectResult.nFaceBottom - mFaceDetectResult.nFaceTop) / (float) height)
+                                        .create()).execute().body();
+                                FaceListManager.getInstance().put(mFeatureData);
+                                RespBase respBase = new RespBase(ErrorCode.STRANGER_WARN, "注意陌生人");
+                                return respBase;
+
+                            }
+                        }
+                        if(personInfo.getScore()>=AppInternal.getInstance().getPreviewThreshold()){
+                            return resp;
+                        } else {
+                            resp.setMessage(AppContext.getInstance().getString(R.string.please_see_camera)+"\n比分为"+personInfo.getScore());
+                            return resp;
+                        }
 
                     }
                 }
+            } else {
+                //服务端没有数据
                 RespBase respBase = new RespBase(ErrorCode.WARING, "审核未通过\n请等待");
                 return respBase;
             }

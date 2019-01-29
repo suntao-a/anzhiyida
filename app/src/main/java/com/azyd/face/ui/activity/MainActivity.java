@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
 import android.support.constraint.ConstraintLayout;
+import android.text.Html;
 import android.text.TextUtils;
 import android.view.SurfaceView;
 import android.view.View;
@@ -32,6 +33,7 @@ import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.ui.request.CapturePhotoRequest;
+import com.azyd.face.ui.request.FacePreviewRequest;
 import com.azyd.face.ui.request.IDCardCaptureRequest;
 import com.azyd.face.ui.request.PreviewRequest;
 import com.azyd.face.util.AppCompat;
@@ -87,7 +89,7 @@ public class MainActivity extends ButterBaseActivity {
     private final RespBase normalResp;
 
     {
-        normalResp = new RespBase(ErrorCode.NORMAL, welcome);
+        normalResp = new RespBase(ErrorCode.RESET, welcome);
     }
 
     @Override
@@ -199,6 +201,83 @@ public class MainActivity extends ButterBaseActivity {
         @Override
         public void onNext(final RespBase respBase) {
             idCardHandler.removeCallbacks(resetRun);
+            int delayTimes = 3000;
+            switch (respBase.getCode()) {
+                case ErrorCode.RESET:
+                    if(!TextUtils.isEmpty(respBase.getMessage())){
+                        tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                        tvResult.setTextColor(Color.WHITE);
+                    }
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 6000;
+                    break;
+                case ErrorCode.SUCCESS:
+                case ErrorCode.WELCOME:
+                case ErrorCode.PLEASE_PASS:
+                    tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                    tvResult.setTextColor(Color.WHITE);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 5000;
+                    break;
+                case ErrorCode.WARING:
+                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                case ErrorCode.MATCH_CASE_FAILED:
+                case ErrorCode.STRANGER_WARN:
+                    tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                    tvResult.setTextColor(Color.YELLOW);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 5000;
+                    break;
+                case ErrorCode.CAMERA_ERROR:
+                case ErrorCode.SERVER_ERROR:
+                case ErrorCode.READ_CARD_ERROR:
+                    tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                    tvResult.setTextColor(Color.YELLOW);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg_error);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog_error);
+                    clFrame.setBackgroundResource(R.drawable.main_frame_error);
+                    ivService.setImageResource(R.drawable.icon_service_error);
+                    delayTimes = 5000;
+                    break;
+                default:
+                    tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                    tvResult.setTextColor(Color.YELLOW);
+                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
+                    tvName.setBackgroundResource(R.drawable.main_name_bg);
+                    flDialog.setBackgroundResource(R.drawable.main_dialog);
+                    clFrame.setBackgroundResource(R.drawable.main_frame);
+                    ivService.setImageResource(R.drawable.icon_service);
+                    delayTimes = 5000;
+                    break;
+
+            }
+            switch (respBase.getCode()) {
+                case ErrorCode.READ_CARD_ERROR:
+                case ErrorCode.CAPTURE_PHOTO_FAILED:
+                case ErrorCode.EVENT_IDCARD_REQUEST_COMPLETED:
+                case ErrorCode.EVENT_CAPTURE_REQUEST_COMPLETED:
+                    mHxCardReadManager.startLoop();
+                    cameraView.startPreviewReq();
+                    break;
+                default:
+
+                    break;
+            }
+
             Uri speekUri = null;
             switch (respBase.getCode()) {
                 case ErrorCode.WELCOME:
@@ -252,80 +331,6 @@ public class MainActivity extends ButterBaseActivity {
                     e.printStackTrace();
                 }
             }
-            int delayTimes = 3000;
-            switch (respBase.getCode()) {
-                case ErrorCode.NORMAL:
-                    if(!TextUtils.isEmpty(respBase.getMessage())){
-                        tvResult.setText(respBase.getMessage());
-                        tvResult.setTextColor(Color.WHITE);
-                    }
-                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-                    tvName.setBackgroundResource(R.drawable.main_name_bg);
-                    flDialog.setBackgroundResource(R.drawable.main_dialog);
-                    clFrame.setBackgroundResource(R.drawable.main_frame);
-                    ivService.setImageResource(R.drawable.icon_service);
-                    delayTimes = 6000;
-                    break;
-                case ErrorCode.SUCCESS:
-                case ErrorCode.WELCOME:
-                case ErrorCode.PLEASE_PASS:
-                    tvResult.setText(respBase.getMessage());
-                    tvResult.setTextColor(Color.WHITE);
-                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-                    tvName.setBackgroundResource(R.drawable.main_name_bg);
-                    flDialog.setBackgroundResource(R.drawable.main_dialog);
-                    clFrame.setBackgroundResource(R.drawable.main_frame);
-                    ivService.setImageResource(R.drawable.icon_service);
-//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
-                    delayTimes = 5000;
-                    break;
-                case ErrorCode.WARING:
-                case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
-                case ErrorCode.CAPTURE_PHOTO_FAILED:
-                case ErrorCode.MATCH_CASE_FAILED:
-                case ErrorCode.STRANGER_WARN:
-                    tvResult.setText(respBase.getMessage());
-                    tvResult.setTextColor(Color.YELLOW);
-                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
-                    tvName.setBackgroundResource(R.drawable.main_name_bg);
-                    flDialog.setBackgroundResource(R.drawable.main_dialog);
-                    clFrame.setBackgroundResource(R.drawable.main_frame);
-                    ivService.setImageResource(R.drawable.icon_service);
-//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
-                    delayTimes = 5000;
-                    break;
-                case ErrorCode.CAMERA_ERROR:
-                case ErrorCode.SERVER_ERROR:
-                case ErrorCode.READ_CARD_ERROR:
-                    tvResult.setText(respBase.getMessage());
-                    tvResult.setTextColor(Color.YELLOW);
-                    tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
-                    tvName.setBackgroundResource(R.drawable.main_name_bg_error);
-                    flDialog.setBackgroundResource(R.drawable.main_dialog_error);
-                    clFrame.setBackgroundResource(R.drawable.main_frame_error);
-                    ivService.setImageResource(R.drawable.icon_service_error);
-//                    KdxfSpeechUtils.speekText(MainActivity.this, respBase.getVoice());
-                    delayTimes = 5000;
-                    break;
-                default:
-
-                    break;
-
-            }
-            switch (respBase.getCode()) {
-                case ErrorCode.READ_CARD_ERROR:
-                case ErrorCode.CAPTURE_PHOTO_FAILED:
-                case ErrorCode.EVENT_IDCARD_REQUEST_COMPLETED:
-                case ErrorCode.EVENT_CAPTURE_REQUEST_COMPLETED:
-                    mHxCardReadManager.startLoop();
-                    cameraView.startPreviewReq();
-                    break;
-                default:
-
-                    break;
-            }
-
-
 
             idCardHandler.postDelayed(resetRun, delayTimes);
         }
@@ -362,7 +367,7 @@ public class MainActivity extends ButterBaseActivity {
             }
             switch (cameraFaceData.getType()) {
                 case CameraPreview.CameraFaceData.PREVIEW:
-                        PreviewRequest request = new PreviewRequest();
+                        FacePreviewRequest request = new FacePreviewRequest();
                         request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
                                 .setFeatureData(cameraFaceData.getFeatureData())
                                 .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
