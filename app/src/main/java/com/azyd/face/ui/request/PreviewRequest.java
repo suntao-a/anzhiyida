@@ -105,7 +105,9 @@ public class PreviewRequest extends BaseRequest {
                 if (resp.isSuccess()) {
                     //开门
                     //Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
-                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, true);
+                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(true, false);
+                    Thread.sleep(500);
+                    AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(false, false);
                     RespBase respBase = new RespBase(ErrorCode.PLEASE_PASS, "请通行");
                     return respBase;
                 } else {
