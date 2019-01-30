@@ -4,4 +4,5 @@
     <dimen name="font_head">38sp</dimen>
     <dimen name="font_splash_line_1">40sp</dimen>
     <dimen name="font_splash_line_2">22sp</dimen>
+    <dimen name="font_msg">70sp</dimen>
 </resources>

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -34,7 +35,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class HXCardReadManager {
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private boolean mbIsOpened = false;
+    private Boolean mbIsOpened = false;
 
     // 读卡
     private HxJ10ReaderID mReaderID = null;
@@ -47,7 +48,9 @@ public class HXCardReadManager {
     Handler mHandler;
     MyHSIDCardInfo ici;
     Context mContext;
+    Disposable mDisposable;
     private BroadcastReceiver mUsbPermissionActionReceiver;
+
     public HXCardReadManager(Handler handler, Context context) {
         mHandler = handler;
         mContext = context;
@@ -57,39 +60,40 @@ public class HXCardReadManager {
         tryGetUsbPermission();
     }
     private void _start() {
-        if (mbIsOpened) {
-            return;
+        synchronized (mbIsOpened){
+            if (mbIsOpened) {
+                return;
+            }
         }
+
+
         startLoop();
-        Observable.fromCallable(new Callable<Integer>() {
+        mDisposable = Observable.fromCallable(new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
+                synchronized (mbIsOpened){
+                    if(mbIsOpened){
+                        return null;
+                    }
+                    mReaderID = new HxJ10ReaderID();
+                    isConnected = mReaderID.OpenDevice(mUsbManager);
+                    if (isConnected != 0) {
+                        return null;
+                        // 设备已打开
 
-                mReaderID = new HxJ10ReaderID();
-                isConnected = mReaderID.OpenDevice(mUsbManager);
-                if (isConnected != 0) {
-                    return null;
-                    // 设备已打开
-
+                    }
+                    mbIsOpened = true;
+                    return isConnected;
                 }
-                mbIsOpened = true;
-                return isConnected;
-            }
-        }).retry(3, new Predicate<Throwable>() {
-            @Override
-            public boolean test(Throwable throwable) throws Exception {
-                Thread.sleep(1000);
-                return true;
+
             }
         }).flatMap(new Function<Integer, ObservableSource<Long>>() {
             @Override
             public ObservableSource<Long> apply(Integer integer) throws Exception {
                 if (integer != 0) {
-                    msg = Message.obtain();
-                    msg.what = HandlerMsg.CONNECT_ERROR;
-                    mHandler.sendMessage(msg);
+                    return null;
                 }
-                return Observable.interval(500, TimeUnit.MILLISECONDS);
+                return Observable.interval(1000, TimeUnit.MILLISECONDS);
             }
         }).subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
@@ -218,6 +222,9 @@ public class HXCardReadManager {
     }
 
     public void close() {
+        if(mDisposable!=null&&!mDisposable.isDisposed()){
+            mDisposable.dispose();
+        }
         mReaderID.CloseDevice();
         mbIsOpened = false;
     }
@@ -263,7 +270,7 @@ public class HXCardReadManager {
 
             if(usbDevice.getVendorId() == 8301 && usbDevice.getProductId() == 1)//身份证设备USB
             {
-                has_idcard_usb = true;
+//                has_idcard_usb = true;
                 //Log.e(TAG,usbDevice.getDeviceName()+"已找到身份证USB");
                 if(mUsbManager.hasPermission(usbDevice)){
                     //Log.e(TAG,usbDevice.getDeviceName()+"已获取过USB权限");
@@ -276,12 +283,12 @@ public class HXCardReadManager {
 
         }
 
-        if(!has_idcard_usb) {
-            msg = Message.obtain();
-            msg.what = HandlerMsg.CONNECT_ERROR;
-            mHandler.sendMessage(msg);
-            //Log.e(TAG,"未找到身份证USB");
-        }
+//        if(!has_idcard_usb) {
+//            msg = Message.obtain();
+//            msg.what = HandlerMsg.CONNECT_ERROR;
+//            mHandler.sendMessage(msg);
+//            //Log.e(TAG,"未找到身份证USB");
+//        }
 
     }
     public void stopLoop(){

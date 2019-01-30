@@ -146,7 +146,7 @@ public class FacePreviewRequest extends BaseRequest {
                                     AppInternal.getInstance().getIandosManager().ICE_DoorSwitch(false, false);
                                 }
                             });
-
+                    FaceListManager.getInstance().put(mFeatureData);
                     return new RespBase(ErrorCode.PLEASE_PASS, "请通行",personInfo.getScore()+"");
                 } else {
                     if (resp.getCode() == 500) {

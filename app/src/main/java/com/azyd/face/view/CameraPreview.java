@@ -73,6 +73,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -141,8 +143,10 @@ public class CameraPreview extends TextureView {
     //相机成像尺寸
     Size cPixelSize;
     boolean isFront = true;
+    private volatile boolean mIsLive = false;
     Disposable previewDisposable;
     ICE_VF_DetectParam mICE_vf_detectParam;
+    RectFace rectFace = new RectFace();
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -180,12 +184,15 @@ public class CameraPreview extends TextureView {
         options.inSampleSize = 1;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
 
+        AppInternal.getInstance().getIandosManager().ICE_VFD_Init();
         mICE_vf_detectParam = new ICE_VF_DetectParam(ICE_VF_DetectParam.ICE_PICTURE_TYPE_VID, 640, 480);
         mICE_vf_detectParam.setSensitive(1);
         mICE_vf_detectParam.setEvalFace(1);
         mICE_vf_detectParam.setTracking(1);
         mICE_vf_detectParam.setDetLiveness(1);
         AppInternal.getInstance().getIandosManager().ICE_VFD_SetDetectParam(mICE_vf_detectParam);
+        Log.e(TAG, "CameraPreview: ICE_VFT_GetVersion" + AppInternal.getInstance().getIandosManager().ICE_VFT_GetVersion());
+
     }
 
     public Observable<WeakReference<CameraFaceData>> getObservable() {
@@ -976,7 +983,7 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, width, height, faceDetectResult);
                 if (ret <= 0) {
                     //检测人脸失败
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -989,7 +996,7 @@ public class CameraPreview extends TextureView {
 
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, width, height, faceDetectResult, featureData);
                 if (ret != 0) {
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -999,7 +1006,7 @@ public class CameraPreview extends TextureView {
                     return;
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -1084,7 +1091,7 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, finalwidth, finalheight, faceDetectResult);
                 if (ret <= 0) {
                     //检测人脸失败
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -1097,7 +1104,7 @@ public class CameraPreview extends TextureView {
                 ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, finalwidth, finalheight, faceDetectResult, featureData);
                 if (ret != 0) {
 
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -1108,7 +1115,7 @@ public class CameraPreview extends TextureView {
                 }
                 if (faceDetectResult.nFaceLeft == 0 && faceDetectResult.nFaceRight == 0) {
 
-                    Observable.timer(2, TimeUnit.SECONDS)
+                    Observable.timer(1, TimeUnit.SECONDS)
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
@@ -1185,6 +1192,20 @@ public class CameraPreview extends TextureView {
                                         finalwidth = bitmap.getWidth();
                                         finalheight = bitmap.getHeight();
                                         faceRGB = ImageUtils.bitmap2RGB(bitmap);
+                                        ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB, finalwidth, finalheight);
+                                        List<ICE_VF_Face> faceList = new ArrayList<>();
+                                        int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame, faceList, bitmap);
+                                        if (faceList.size() == 0) {
+                                            //没有活体
+                                            return null;
+                                        }
+                                        for (ICE_VF_Face face : faceList) {
+                                            if (face.getfLiveScore() < 1) {
+                                                //非活体
+                                                return null;
+                                            }
+                                        }
+
                                         if (!bitmap.isRecycled()) {
                                             bitmap.recycle();
                                             bitmap = null;
@@ -1197,6 +1218,21 @@ public class CameraPreview extends TextureView {
                                         faceRGB = ImageUtils.bitmap2RGB(faceImg);
                                         finalwidth = faceImg.getWidth();
                                         finalheight = faceImg.getHeight();
+                                        ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB, finalwidth, finalheight);
+                                        List<ICE_VF_Face> faceList = new ArrayList<>();
+                                        int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame, faceList, bitmap);
+                                        Log.e(TAG, "ICE_VFD_Process: 【" + ret + "】 faceList.size():" + faceList.size());
+                                        if (faceList.size() == 0) {
+                                            //没有活体
+                                            return null;
+                                        }
+                                        for (ICE_VF_Face face : faceList) {
+                                            if (face.getfLiveScore() < 1) {
+                                                //非活体
+                                                Log.e(TAG, "face.getfLiveScore(): " + face.getfLiveScore());
+                                                return null;
+                                            }
+                                        }
                                         if (!bitmap.isRecycled()) {
                                             bitmap.recycle();
                                             bitmap = null;
@@ -1213,19 +1249,18 @@ public class CameraPreview extends TextureView {
                                     }
                                     int ret = 0;
 
-                                    ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB,finalwidth,finalheight);
-                                    List<ICE_VF_Face> faceList = new ArrayList<>();
-                                    ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame,faceList);
-                                    if(faceList.size()==0){
-                                        //没有活体
-                                        return null;
-                                    }
-                                    for(ICE_VF_Face face : faceList){
-                                        if(face.getfLiveScore()<1){
-                                            //非活体
-                                            return null;
-                                        }
-                                    }
+
+//                                    if(faceList.size()==0){
+//                                        //没有活体
+//                                        return null;
+//                                    }
+//                                    for(ICE_VF_Face face : faceList){
+//                                        if(face.getfLiveScore()<1){
+//                                            //非活体
+//                                            Log.e(TAG, "face.getfLiveScore(): "+face.getfLiveScore());
+//                                            return null;
+//                                        }
+//                                    }
                                     //识别
 
                                     FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
@@ -1255,10 +1290,9 @@ public class CameraPreview extends TextureView {
                                                 .setImageWidth(finalwidth)));
                                     }
 
-                                    Log.e(TAG, "Left:" + faceDetectResult.nFaceLeft + " _Right:" + faceDetectResult.nFaceRight + "_Top:" + faceDetectResult.nFaceTop + "_Bottom:" + faceDetectResult.nFaceBottom);
                                     float widthRate = getWidth() / (float) finalwidth;
                                     float heightRate = getHeight() / (float) finalheight;
-                                    RectFace rectFace = new RectFace();
+
                                     rectFace.nFaceLeft = (int) (faceDetectResult.nFaceLeft * widthRate);
                                     rectFace.nFaceRight = (int) (faceDetectResult.nFaceRight * widthRate);
                                     rectFace.nFaceTop = (int) (faceDetectResult.nFaceTop * heightRate);
@@ -1362,9 +1396,11 @@ public class CameraPreview extends TextureView {
 
         }
     };
-    private static class RectFace{
+
+    private static class RectFace {
         public int nFaceLeft, nFaceTop, nFaceRight, nFaceBottom; // 人脸坐标
     }
+
     public static class CameraFaceData {
         public final static int PREVIEW = 0;
         public final static int CAPTURE = 1;

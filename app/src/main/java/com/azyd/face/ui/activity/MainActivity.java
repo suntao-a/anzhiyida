@@ -129,9 +129,7 @@ public class MainActivity extends ButterBaseActivity {
 //        requestWriteSettings();
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
-        //启动身份证读卡器
-        mHxCardReadManager = new HXCardReadManager(idCardHandler, this);
-        mHxCardReadManager.start();
+
         //启动单任务执行中心
         try {
             SingleDispatcher.getInstance().start();
@@ -177,6 +175,17 @@ public class MainActivity extends ButterBaseActivity {
                 SingleDispatcher.getInstance().getObservable().onNext(new RespBase(ErrorCode.WELCOME, welcome));
             }
         }, 200);
+
+        //启动身份证读卡器
+        idCardHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mHxCardReadManager = new HXCardReadManager(idCardHandler, MainActivity.this);
+                mHxCardReadManager.start();
+            }
+        }, 1000);
+
+
 
     }
     private void requestWriteSettings() {
@@ -268,7 +277,7 @@ public class MainActivity extends ButterBaseActivity {
                     delayTimes = 5000;
                     break;
                 default:
-                    tvResult.setText(Html.fromHtml(respBase.getMessage()));
+                    tvResult.setText(!TextUtils.isEmpty(respBase.getMessage())?Html.fromHtml(respBase.getMessage()):"");
                     tvResult.setTextColor(Color.YELLOW);
                     tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
                     tvRightTopMsg.setTextColor(Color.YELLOW);
@@ -286,8 +295,13 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.CAPTURE_PHOTO_FAILED:
                 case ErrorCode.EVENT_IDCARD_REQUEST_COMPLETED:
                 case ErrorCode.EVENT_CAPTURE_REQUEST_COMPLETED:
-                    mHxCardReadManager.startLoop();
-                    cameraView.startPreviewReq();
+                    idCardHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mHxCardReadManager.startLoop();
+                            cameraView.startPreviewReq();
+                        }
+                    }, 1500);
                     break;
                 default:
 
