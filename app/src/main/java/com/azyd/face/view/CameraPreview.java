@@ -29,6 +29,8 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.Face;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.iandos.ICE_VF_DetectParam;
+import android.iandos.ICE_VF_Face;
+import android.iandos.ICE_VF_Frame;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Environment;
@@ -88,16 +90,23 @@ public class CameraPreview extends TextureView {
     private PublishSubject<WeakReference<CameraFaceData>> mSubject = PublishSubject.create();
     private BitmapFactory.Options options;
     private static final String TAG = "CameraPreview";
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();//从屏幕旋转转换为JPEG方向
-    private static final int MAX_PREVIEW_WIDTH = 1920;//Camera2 API 保证的最大预览宽高
+    //从屏幕旋转转换为JPEG方向
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    //Camera2 API 保证的最大预览宽高
+    private static final int MAX_PREVIEW_WIDTH = 1920;
     private static final int MAX_PREVIEW_HEIGHT = 1080;
-
-    private static final int STATE_PREVIEW = 0;//显示相机预览
-    private static final int STATE_WAITING_LOCK = 1;//焦点锁定中
-    private static final int STATE_WAITING_PRE_CAPTURE = 2;//拍照中
-    private static final int STATE_WAITING_NON_PRE_CAPTURE = 3;//其它状态
-    private static final int STATE_PICTURE_TAKEN = 4;//拍照完毕
-    private boolean runPreviewReq = true;//控制preview reqest 的开启
+    //显示相机预览
+    private static final int STATE_PREVIEW = 0;
+    //焦点锁定中
+    private static final int STATE_WAITING_LOCK = 1;
+    //拍照中
+    private static final int STATE_WAITING_PRE_CAPTURE = 2;
+    //其它状态
+    private static final int STATE_WAITING_NON_PRE_CAPTURE = 3;
+    //拍照完毕
+    private static final int STATE_PICTURE_TAKEN = 4;
+    //控制preview reqest 的开启
+    private boolean runPreviewReq = true;
     private boolean mFlashSupported;
     private int mPhotoAngle = -90;
     private int mInterval = 5000;
@@ -108,7 +117,8 @@ public class CameraPreview extends TextureView {
     private int mSensorOrientation;
 
     private boolean mMirror = true;
-    private Semaphore mCameraOpenCloseLock = new Semaphore(1);//使用信号量 Semaphore 进行多线程任务调度
+    //使用信号量 Semaphore 进行多线程任务调度
+    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private Activity activity;
     private File mFile;
     private String mPath;
@@ -128,7 +138,8 @@ public class CameraPreview extends TextureView {
     private SurfaceView mSurfaceView;
     private boolean mFaceDetectSupported;
     private Integer mFaceDetectMode;
-    Size cPixelSize;//相机成像尺寸
+    //相机成像尺寸
+    Size cPixelSize;
     boolean isFront = true;
     Disposable previewDisposable;
     ICE_VF_DetectParam mICE_vf_detectParam;
@@ -168,11 +179,13 @@ public class CameraPreview extends TextureView {
         options = new BitmapFactory.Options();
         options.inSampleSize = 1;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
+
         mICE_vf_detectParam = new ICE_VF_DetectParam(ICE_VF_DetectParam.ICE_PICTURE_TYPE_VID, 640, 480);
         mICE_vf_detectParam.setSensitive(1);
         mICE_vf_detectParam.setEvalFace(1);
         mICE_vf_detectParam.setTracking(1);
         mICE_vf_detectParam.setDetLiveness(1);
+        AppInternal.getInstance().getIandosManager().ICE_VFD_SetDetectParam(mICE_vf_detectParam);
     }
 
     public Observable<WeakReference<CameraFaceData>> getObservable() {
@@ -1033,7 +1046,6 @@ public class CameraPreview extends TextureView {
                 int finalwidth = 0;
                 int finalheight = 0;
                 if (mPhotoAngle == 0 && !mMirror) {
-
                     SoftReference softRef = new SoftReference(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
                     bitmap = (Bitmap) softRef.get();
                     if (bitmap == null) {
@@ -1139,15 +1151,11 @@ public class CameraPreview extends TextureView {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image = reader.acquireLatestImage();
-
             if (image == null) {
                 return;
             }
             try {
-
-                int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_SetDetectParam(mICE_vf_detectParam);
                 long tempcurrtime = System.currentTimeMillis();
-
                 if (tempcurrtime - currentTime > mInterval) {
                     System.gc();
                     //处理
@@ -1159,9 +1167,9 @@ public class CameraPreview extends TextureView {
                     buffer.clear();
                     buffer = null;
                     Observable.just(softData)
-                            .map(new Function<SoftReference<byte[]>, FACE_DETECT_RESULT>() {
+                            .map(new Function<SoftReference<byte[]>, RectFace>() {
                                 @Override
-                                public FACE_DETECT_RESULT apply(SoftReference<byte[]> softBytes) {
+                                public RectFace apply(SoftReference<byte[]> softBytes) {
                                     Bitmap bitmap = null;
                                     //旋转、镜像
                                     Bitmap faceImg = null;
@@ -1169,7 +1177,6 @@ public class CameraPreview extends TextureView {
                                     int finalwidth = 0;
                                     int finalheight = 0;
                                     if (mPhotoAngle == 0 && !mMirror) {
-
                                         SoftReference softRef = new SoftReference(BitmapFactory.decodeByteArray(softBytes.get(), 0, softBytes.get().length));
                                         bitmap = (Bitmap) softRef.get();
                                         if (bitmap == null) {
@@ -1204,10 +1211,23 @@ public class CameraPreview extends TextureView {
                                     if (faceRGB == null) {
                                         return null;
                                     }
-
-
-                                    //识别
                                     int ret = 0;
+
+                                    ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB,finalwidth,finalheight);
+                                    List<ICE_VF_Face> faceList = new ArrayList<>();
+                                    ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame,faceList);
+                                    if(faceList.size()==0){
+                                        //没有活体
+                                        return null;
+                                    }
+                                    for(ICE_VF_Face face : faceList){
+                                        if(face.getfLiveScore()<1){
+                                            //非活体
+                                            return null;
+                                        }
+                                    }
+                                    //识别
+
                                     FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
                                     int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
                                     byte[] featureData = new byte[nFeatureSize];
@@ -1238,11 +1258,12 @@ public class CameraPreview extends TextureView {
                                     Log.e(TAG, "Left:" + faceDetectResult.nFaceLeft + " _Right:" + faceDetectResult.nFaceRight + "_Top:" + faceDetectResult.nFaceTop + "_Bottom:" + faceDetectResult.nFaceBottom);
                                     float widthRate = getWidth() / (float) finalwidth;
                                     float heightRate = getHeight() / (float) finalheight;
-                                    faceDetectResult.nFaceLeft = (int) (faceDetectResult.nFaceLeft * widthRate);
-                                    faceDetectResult.nFaceRight = (int) (faceDetectResult.nFaceRight * widthRate);
-                                    faceDetectResult.nFaceTop = (int) (faceDetectResult.nFaceTop * heightRate);
-                                    faceDetectResult.nFaceBottom = (int) (faceDetectResult.nFaceBottom * heightRate);
-                                    return faceDetectResult;
+                                    RectFace rectFace = new RectFace();
+                                    rectFace.nFaceLeft = (int) (faceDetectResult.nFaceLeft * widthRate);
+                                    rectFace.nFaceRight = (int) (faceDetectResult.nFaceRight * widthRate);
+                                    rectFace.nFaceTop = (int) (faceDetectResult.nFaceTop * heightRate);
+                                    rectFace.nFaceBottom = (int) (faceDetectResult.nFaceBottom * heightRate);
+                                    return rectFace;
 
                                 }
                             })
@@ -1290,7 +1311,7 @@ public class CameraPreview extends TextureView {
         }
     }
 
-    private Observer drawFaceObserver = new Observer<FACE_DETECT_RESULT>() {
+    private Observer drawFaceObserver = new Observer<RectFace>() {
 
         @Override
         public void onSubscribe(Disposable d) {
@@ -1298,7 +1319,7 @@ public class CameraPreview extends TextureView {
         }
 
         @Override
-        public void onNext(FACE_DETECT_RESULT face_detect_result) {
+        public void onNext(RectFace face_detect_result) {
             if (mSurfaceHolder == null) {
                 return;
             }
@@ -1341,7 +1362,9 @@ public class CameraPreview extends TextureView {
 
         }
     };
-
+    private static class RectFace{
+        public int nFaceLeft, nFaceTop, nFaceRight, nFaceBottom; // 人脸坐标
+    }
     public static class CameraFaceData {
         public final static int PREVIEW = 0;
         public final static int CAPTURE = 1;

@@ -76,6 +76,8 @@ public class MainActivity extends ButterBaseActivity {
     TextView tvName;
     @BindView(R.id.tv_result)
     TextView tvResult;
+    @BindView(R.id.tv_right_top_msg)
+    TextView tvRightTopMsg;
     @BindView(R.id.fl_dialog)
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
@@ -203,11 +205,17 @@ public class MainActivity extends ButterBaseActivity {
             idCardHandler.removeCallbacks(resetRun);
             int delayTimes = 3000;
             switch (respBase.getCode()) {
+                case ErrorCode.NONE_THING_TODO:
+                    break;
                 case ErrorCode.RESET:
                     if(!TextUtils.isEmpty(respBase.getMessage())){
                         tvResult.setText(Html.fromHtml(respBase.getMessage()));
                         tvResult.setTextColor(Color.WHITE);
                     }
+                    tvResult.setText(!TextUtils.isEmpty(respBase.getMessage())?Html.fromHtml(respBase.getMessage()):"");
+                    tvResult.setTextColor(Color.WHITE);
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setTextColor(Color.WHITE);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
@@ -220,6 +228,8 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.PLEASE_PASS:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.WHITE);
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setTextColor(Color.WHITE);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
@@ -234,6 +244,8 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.STRANGER_WARN:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.YELLOW);
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
                     flDialog.setBackgroundResource(R.drawable.main_dialog);
@@ -246,6 +258,8 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.READ_CARD_ERROR:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.YELLOW);
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
                     tvName.setBackgroundResource(R.drawable.main_name_bg_error);
                     flDialog.setBackgroundResource(R.drawable.main_dialog_error);
@@ -256,6 +270,8 @@ public class MainActivity extends ButterBaseActivity {
                 default:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.YELLOW);
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
                     flDialog.setBackgroundResource(R.drawable.main_dialog);

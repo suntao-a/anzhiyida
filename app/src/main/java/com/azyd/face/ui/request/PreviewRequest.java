@@ -75,7 +75,7 @@ public class PreviewRequest extends BaseRequest {
             boolean have = FaceListManager.getInstance().contains(mFeatureData);
             if (have) {
                 //本地列表已有,放弃此次请求
-                return new RespBase(ErrorCode.RESET, null);
+                return new RespBase(ErrorCode.NONE_THING_TODO, null);
             }
             FaceListManager.getInstance().put(mFeatureData,1);
             //和服务端通信比对

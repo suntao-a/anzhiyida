@@ -2,6 +2,6 @@
 <resources>
     <dimen name="icon_service">40dp</dimen>
     <dimen name="font_head">20sp</dimen>
-    <dimen name="font_splash_line_1">26sp</dimen>
-    <dimen name="font_splash_line_2">12sp</dimen>
+    <dimen name="font_splash_line_1">32sp</dimen>
+    <dimen name="font_splash_line_2">16sp</dimen>
 </resources>

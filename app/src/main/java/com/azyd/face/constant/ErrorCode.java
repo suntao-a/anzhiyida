@@ -21,6 +21,7 @@ public class ErrorCode {
     public static final int STRANGER_WARN = 709;
     public static final int RESET = 710;
     public static final int WARING = 711;
+    public static final int NONE_THING_TODO = 712;
 
     public static final int EVENT_IDCARD_REQUEST_COMPLETED = 102;
     public static final int EVENT_CAPTURE_REQUEST_COMPLETED = 103;

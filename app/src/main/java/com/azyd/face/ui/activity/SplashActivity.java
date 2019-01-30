@@ -14,6 +14,7 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -44,6 +45,7 @@ import com.azyd.face.util.PhoneInfoUtil;
 import com.azyd.face.util.RequestParam;
 import com.azyd.face.util.SharedPreferencesHelper;
 import com.azyd.face.util.ShowMyToast;
+import com.azyd.face.util.Utils;
 import com.azyd.face.util.permission.PermissionReq;
 import com.azyd.face.util.permission.PermissionResult;
 import com.azyd.face.util.permission.Permissions;
@@ -296,9 +298,6 @@ public class SplashActivity extends ButterBaseActivity {
                             e.onNext(response);
                             e.onComplete();
                         } else {
-//                            response.setMessage("设备在线检测成功");
-//                            e.onNext(response);
-//                            e.onComplete();
                             throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                         }
 
@@ -306,7 +305,7 @@ public class SplashActivity extends ButterBaseActivity {
                         throw new ServerException(ErrorCode.DEVICE_NOT_REGISTERED, "设备mac:" + AppInternal.getInstance().getIMEI() + "\n" + response.getMessage());
                     }
                 } catch (IOException e1) {
-                    throw new ServerException(ErrorCode.SERVER_ERROR, "核验主机故障");
+                    e.onError(new ServerException(ErrorCode.SERVER_ERROR, "核验主机故障"));
                 }
 
             }
@@ -338,7 +337,8 @@ public class SplashActivity extends ButterBaseActivity {
                     long tEnd = System.nanoTime() / 1000000;
                     if (ret == 0) {
                         bSdkInit = true;
-                        str = "NET-SDK启动成功, 用时 " + (tEnd - tStart) + " 毫秒";
+
+                        str = "NET-SDK启动成功, 用时 " + (tEnd - tStart) + " 毫秒"+"  屏幕最小宽度："+Utils.getSmallestWidthDP(SplashActivity.this);
                         response.setCode(200);
                         response.setMessage(str);
                     } else {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="icon_service">100dp</dimen>
-    <dimen name="font_head">28sp</dimen>
-    <dimen name="font_splash_line_1">32sp</dimen>
-    <dimen name="font_splash_line_2">18sp</dimen>
+    <dimen name="font_head">38sp</dimen>
+    <dimen name="font_splash_line_1">40sp</dimen>
+    <dimen name="font_splash_line_2">22sp</dimen>
 </resources>

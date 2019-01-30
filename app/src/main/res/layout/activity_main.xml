@@ -92,6 +92,14 @@
                 android:textColor="@android:color/white"
                 android:textSize="@dimen/font_splash_line_1"
                 android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tv_right_top_msg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:textSize="@dimen/font_splash_line_1"
+                android:layout_marginRight="5dp"
+                />
         </FrameLayout>
 
         <ImageView

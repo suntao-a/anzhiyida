@@ -227,6 +227,7 @@ public class HXCardReadManager {
     private void tryGetUsbPermission(){
 
         mUsbPermissionActionReceiver = new BroadcastReceiver() {
+            @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
                 if (ACTION_USB_PERMISSION.equals(action)) {
