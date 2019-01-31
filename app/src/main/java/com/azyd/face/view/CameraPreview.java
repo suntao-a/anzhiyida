@@ -56,6 +56,9 @@ import com.azyd.face.constant.CameraConstant;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.dispatcher.SingleDispatcher;
 
+import com.azyd.face.ui.activity.MainActivity;
+import com.azyd.face.ui.activity.SplashActivity;
+import com.azyd.face.util.CleanDataUtils;
 import com.azyd.face.util.ImageUtils;
 import com.idfacesdk.FACE_DETECT_RESULT;
 import com.idfacesdk.IdFaceSdk;
@@ -1183,6 +1186,8 @@ public class CameraPreview extends TextureView {
                                     byte[] faceRGB = null;
                                     int finalwidth = 0;
                                     int finalheight = 0;
+                                    int liveCount = 0;
+                                    StringBuilder log = new StringBuilder();
                                     if (mPhotoAngle == 0 && !mMirror) {
                                         SoftReference softRef = new SoftReference(BitmapFactory.decodeByteArray(softBytes.get(), 0, softBytes.get().length));
                                         bitmap = (Bitmap) softRef.get();
@@ -1195,13 +1200,25 @@ public class CameraPreview extends TextureView {
                                         ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB, finalwidth, finalheight);
                                         List<ICE_VF_Face> faceList = new ArrayList<>();
                                         int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame, faceList, bitmap);
+                                        liveCount = faceList.size();
+                                        log.append("H人脸数量："+faceList.size()+"  ");
+                                        for (int i=0;i<faceList.size();i++) {
+                                            log.append("  ["+i+"]:"+faceList.get(i).getfLiveScore());
+                                        }
+
                                         if (faceList.size() == 0) {
                                             //没有活体
+                                            RespBase logresp = new RespBase(ErrorCode.LIVE_TEST,"");
+                                            logresp.setLeftTopMsg(log.toString());
+                                            SingleDispatcher.getInstance().getObservable().onNext(logresp);
                                             return null;
                                         }
                                         for (ICE_VF_Face face : faceList) {
                                             if (face.getfLiveScore() < 1) {
                                                 //非活体
+                                                RespBase logresp = new RespBase(ErrorCode.LIVE_TEST,"");
+                                                logresp.setLeftTopMsg(log.toString());
+                                                SingleDispatcher.getInstance().getObservable().onNext(logresp);
                                                 return null;
                                             }
                                         }
@@ -1221,6 +1238,7 @@ public class CameraPreview extends TextureView {
                                         ICE_VF_Frame frame = new ICE_VF_Frame(faceRGB, finalwidth, finalheight);
                                         List<ICE_VF_Face> faceList = new ArrayList<>();
                                         int ret = AppInternal.getInstance().getIandosManager().ICE_VFD_Process(frame, faceList, bitmap);
+                                        liveCount = faceList.size();
                                         Log.e(TAG, "ICE_VFD_Process: 【" + ret + "】 faceList.size():" + faceList.size());
                                         if (faceList.size() == 0) {
                                             //没有活体
@@ -1248,30 +1266,24 @@ public class CameraPreview extends TextureView {
                                         return null;
                                     }
                                     int ret = 0;
-
-
-//                                    if(faceList.size()==0){
-//                                        //没有活体
-//                                        return null;
-//                                    }
-//                                    for(ICE_VF_Face face : faceList){
-//                                        if(face.getfLiveScore()<1){
-//                                            //非活体
-//                                            Log.e(TAG, "face.getfLiveScore(): "+face.getfLiveScore());
-//                                            return null;
-//                                        }
-//                                    }
                                     //识别
-
                                     FACE_DETECT_RESULT faceDetectResult = new FACE_DETECT_RESULT();
                                     int nFeatureSize = IdFaceSdk.IdFaceSdkFeatureSize();
                                     byte[] featureData = new byte[nFeatureSize];
                                     ret = IdFaceSdk.IdFaceSdkDetectFace(faceRGB, finalwidth, finalheight, faceDetectResult);
+
+                                    log.append("\n");
+                                    log.append("A人脸数量："+ret+"  [0].left:"+faceDetectResult.nFaceLeft+"  缓存:"+ CleanDataUtils.getTotalCacheSize(activity));
+                                    RespBase logresp = new RespBase(ErrorCode.LIVE_TEST,"");
+                                    logresp.setLeftTopMsg(log.toString());
+                                    SingleDispatcher.getInstance().getObservable().onNext(logresp);
                                     if (ret <= 0) {
                                         //检测人脸失败
+                                        if(activity instanceof MainActivity){
+                                            ((MainActivity) activity).startSDK();
+                                        }
                                         return null;
                                     }
-
                                     ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, finalwidth, finalheight, faceDetectResult, featureData);
                                     if (ret != 0) {
                                         //strResult = "JPEG文件提取特征失败，返回 " + ret + ", 文件路径: " + fileNames[i];

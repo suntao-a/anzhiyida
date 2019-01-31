@@ -25,4 +25,8 @@ public class ErrorCode {
 
     public static final int EVENT_IDCARD_REQUEST_COMPLETED = 102;
     public static final int EVENT_CAPTURE_REQUEST_COMPLETED = 103;
+
+
+
+    public static final int LIVE_TEST = 9901;
 }

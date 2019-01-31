@@ -31,6 +31,7 @@ import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.FaceListManager;
+import com.azyd.face.dispatcher.base.StrangerListManager;
 import com.azyd.face.dispatcher.request.DemoRequest;
 import com.azyd.face.ui.request.CapturePhotoRequest;
 import com.azyd.face.ui.request.FacePreviewRequest;
@@ -78,6 +79,8 @@ public class MainActivity extends ButterBaseActivity {
     TextView tvResult;
     @BindView(R.id.tv_right_top_msg)
     TextView tvRightTopMsg;
+    @BindView(R.id.tv_left_top_msg)
+    TextView tvLeftTopMsg;
     @BindView(R.id.fl_dialog)
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
@@ -275,6 +278,10 @@ public class MainActivity extends ButterBaseActivity {
                     clFrame.setBackgroundResource(R.drawable.main_frame_error);
                     ivService.setImageResource(R.drawable.icon_service_error);
                     delayTimes = 5000;
+                    break;
+                case ErrorCode.LIVE_TEST:
+                    tvLeftTopMsg.setText(!TextUtils.isEmpty(respBase.getLeftTopMsg())?respBase.getLeftTopMsg():"");
+                    tvLeftTopMsg.setTextColor(Color.YELLOW);
                     break;
                 default:
                     tvResult.setText(!TextUtils.isEmpty(respBase.getMessage())?Html.fromHtml(respBase.getMessage()):"");
@@ -560,6 +567,7 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
@@ -581,11 +589,11 @@ public class MainActivity extends ButterBaseActivity {
         } catch (Exception e){
 
         }
+        StrangerListManager.getInstance().onDestory();
         FaceListManager.getInstance().onDestory();
         SingleDispatcher.getInstance().quit();
-
-        super.onDestroy();
         AppContext.getInstance().exit();
+
     }
 
     @Override
@@ -611,6 +619,7 @@ public class MainActivity extends ButterBaseActivity {
         SingleDispatcher.getInstance().quit();
 
         super.onBackPressed();
+        finish();
     }
 
 
@@ -632,7 +641,25 @@ public class MainActivity extends ButterBaseActivity {
         }
 
     }
+    public void startSDK(){
+        closeSDK();
+        String ip = AppInternal.getInstance().getSdkIP();
+        IdFaceSdk.IdFaceSdkSetServer(this, ip, 6389, "张三san", "8888888", "研发部e");
+        int ret = IdFaceSdk.IdFaceSdkInit(this.getCacheDir().getAbsolutePath());
+        if (ret == 0) {
+            Toast.makeText(this,"sdk启动成功",Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,"sdk启动失败",Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void closeSDK(){
+        try{
+            IdFaceSdk.IdFaceSdkUninit();
+        } catch (Exception e){
 
+        }
+
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {

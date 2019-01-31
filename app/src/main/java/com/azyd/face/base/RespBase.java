@@ -7,6 +7,7 @@ package com.azyd.face.base;
  */
 public class RespBase implements IProguardKeeper{
     String rightTopMsg;
+    String leftTopMsg;
     int code;
     String message;
     String voice;
@@ -52,6 +53,14 @@ public class RespBase implements IProguardKeeper{
 
     public void setRightTopMsg(String rightTopMsg) {
         this.rightTopMsg = rightTopMsg;
+    }
+
+    public String getLeftTopMsg() {
+        return leftTopMsg;
+    }
+
+    public void setLeftTopMsg(String leftTopMsg) {
+        this.leftTopMsg = leftTopMsg;
     }
 
     public boolean isSuccess(){
