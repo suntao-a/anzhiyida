@@ -20,7 +20,9 @@ import com.idfacesdk.FACE_DETECT_RESULT;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * @author suntao
@@ -108,6 +110,8 @@ public class CapturePhotoRequest extends BaseRequest {
             System.gc();
 
             Observable.timer(2, TimeUnit.SECONDS)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<Long>() {
                         @Override
                         public void accept(Long aLong) {

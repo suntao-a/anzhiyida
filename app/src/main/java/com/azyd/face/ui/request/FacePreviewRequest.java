@@ -25,7 +25,9 @@ import com.idfacesdk.FACE_DETECT_RESULT;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public class FacePreviewRequest extends BaseRequest {
     private final String TAG = "PreviewRequest";
@@ -134,6 +136,8 @@ public class FacePreviewRequest extends BaseRequest {
                                 .create()).execute().body();
                 if (resp.isSuccess()) {
                     Observable.timer(500, TimeUnit.MILLISECONDS)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(Schedulers.io())
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {

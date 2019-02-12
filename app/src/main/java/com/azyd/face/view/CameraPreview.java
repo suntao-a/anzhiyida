@@ -1279,9 +1279,9 @@ public class CameraPreview extends TextureView {
                                     SingleDispatcher.getInstance().getObservable().onNext(logresp);
                                     if (ret <= 0) {
                                         //检测人脸失败
-                                        if(activity instanceof MainActivity){
-                                            ((MainActivity) activity).startSDK();
-                                        }
+//                                        if(activity instanceof MainActivity){
+//                                            ((MainActivity) activity).startSDK();
+//                                        }
                                         return null;
                                     }
                                     ret = IdFaceSdk.IdFaceSdkFeatureGet(faceRGB, finalwidth, finalheight, faceDetectResult, featureData);

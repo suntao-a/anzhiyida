@@ -171,7 +171,7 @@ public class SplashActivity extends ButterBaseActivity {
 
     protected void initBackground() {
 
-        Observable.concat(createInitMac(), createCheckMac(), createStartSDK())
+        Observable.concat(createInitMac(), createCheckMac())
                 .compose(new AsynTransformer())
                 .subscribe(new SimpleObserver() {
                     @Override
@@ -241,6 +241,7 @@ public class SplashActivity extends ButterBaseActivity {
                     AppInternal.getInstance().setIMEI(mac);
 
                 }
+                AppInternal.getInstance().setIMEI("B0-F1-EC-96-BB-AA");
                 AppInternal.getInstance().setIandosManager((IandosManager) getSystemService("iandos"));
                 AppInternal.getInstance().setSdkIP((String) SharedPreferencesHelper.getInstance().get(ExtraName.SDK_IP, "192.168.0.107"));
                 AppInternal.getInstance().setIdcardThreshold((Integer) SharedPreferencesHelper.getInstance().get(ExtraName.IDCARD_THRESHOLD, 60));

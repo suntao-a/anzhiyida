@@ -31,7 +31,9 @@ import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * @author suntao
@@ -160,6 +162,8 @@ public class IDCardCaptureRequest extends BaseRequest {
             if (response.isSuccess()) {
                 //开门
                 Observable.timer(500, TimeUnit.MILLISECONDS)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(Schedulers.io())
                         .subscribe(new Consumer<Long>() {
                             @Override
                             public void accept(Long aLong) {
@@ -187,7 +191,10 @@ public class IDCardCaptureRequest extends BaseRequest {
             return new RespBase(ErrorCode.SERVER_ERROR, "核验主机故障");
         } finally {
             System.gc();
+
             Observable.timer(2, TimeUnit.SECONDS)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<Long>() {
                         @Override
                         public void accept(Long aLong) {

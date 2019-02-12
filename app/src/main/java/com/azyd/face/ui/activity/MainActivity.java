@@ -27,12 +27,14 @@ import com.azyd.face.app.AppContext;
 import com.azyd.face.app.AppInternal;
 import com.azyd.face.base.ButterBaseActivity;
 import com.azyd.face.base.RespBase;
+import com.azyd.face.base.rxjava.AsynTransformer;
 import com.azyd.face.constant.ErrorCode;
 import com.azyd.face.constant.RoutePath;
 import com.azyd.face.dispatcher.SingleDispatcher;
 import com.azyd.face.dispatcher.base.FaceListManager;
 import com.azyd.face.dispatcher.base.StrangerListManager;
 import com.azyd.face.dispatcher.request.DemoRequest;
+import com.azyd.face.receiver.USBDiskReceiver;
 import com.azyd.face.ui.request.CapturePhotoRequest;
 import com.azyd.face.ui.request.FacePreviewRequest;
 import com.azyd.face.ui.request.IDCardCaptureRequest;
@@ -52,6 +54,8 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -85,6 +89,7 @@ public class MainActivity extends ButterBaseActivity {
     FrameLayout flDialog;
     @BindView(R.id.btn_custom)
     TextView btnCustom;
+    private boolean bSdkInit = false;
     MediaPlayer mediaPlayer;
     Disposable msgDisposable, cameraDisposable;
     private PublishSubject<MyHSIDCardInfo> mCardInfoPublishSubject;
@@ -127,8 +132,27 @@ public class MainActivity extends ButterBaseActivity {
     @SuppressLint("CheckResult")
     @Override
     protected void initData(Bundle savedInstanceState) {
-        DemoRequest demoRequest = new DemoRequest(null);
-        SingleDispatcher.getInstance().add(demoRequest);
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> e) throws Exception {
+                Integer ret = startSDK();
+                e.onNext(ret);
+                e.onComplete();
+
+            }
+        })
+                .compose(new AsynTransformer())
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer ret) throws Exception {
+                        if (ret == 0) {
+                            bSdkInit = true;
+                            Toast.makeText(MainActivity.this, "sdk启动成功", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "sdk启动失败", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
 //        requestWriteSettings();
         mCardInfoPublishSubject = PublishSubject.create();
         mIDCardCapturePublishSubject = PublishSubject.create();
@@ -185,25 +209,26 @@ public class MainActivity extends ButterBaseActivity {
             public void run() {
                 mHxCardReadManager = new HXCardReadManager(idCardHandler, MainActivity.this);
                 mHxCardReadManager.start();
+                USBDiskReceiver.setCardReadManager(mHxCardReadManager);
             }
         }, 1000);
 
 
-
     }
+
     private void requestWriteSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //大于等于23 请求权限
-            if ( !Settings.System.canWrite(getApplicationContext())) {
+            if (!Settings.System.canWrite(getApplicationContext())) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                 intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, 11 );
+                startActivityForResult(intent, 11);
             }
-        }else{
+        } else {
             //小于23直接设置
         }
     }
+
     //处理结果
     private Observer msgObserver = new Observer<RespBase>() {
 
@@ -220,13 +245,11 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.NONE_THING_TODO:
                     break;
                 case ErrorCode.RESET:
-                    if(!TextUtils.isEmpty(respBase.getMessage())){
+                    if (!TextUtils.isEmpty(respBase.getMessage())) {
                         tvResult.setText(Html.fromHtml(respBase.getMessage()));
                         tvResult.setTextColor(Color.WHITE);
                     }
-                    tvResult.setText(!TextUtils.isEmpty(respBase.getMessage())?Html.fromHtml(respBase.getMessage()):"");
-                    tvResult.setTextColor(Color.WHITE);
-                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg()) ? respBase.getRightTopMsg() : "");
                     tvRightTopMsg.setTextColor(Color.WHITE);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
@@ -240,7 +263,7 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.PLEASE_PASS:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.WHITE);
-                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg()) ? respBase.getRightTopMsg() : "");
                     tvRightTopMsg.setTextColor(Color.WHITE);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
@@ -256,7 +279,7 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.STRANGER_WARN:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.YELLOW);
-                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg()) ? respBase.getRightTopMsg() : "");
                     tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
@@ -270,7 +293,7 @@ public class MainActivity extends ButterBaseActivity {
                 case ErrorCode.READ_CARD_ERROR:
                     tvResult.setText(Html.fromHtml(respBase.getMessage()));
                     tvResult.setTextColor(Color.YELLOW);
-                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg()) ? respBase.getRightTopMsg() : "");
                     tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg_error);
                     tvName.setBackgroundResource(R.drawable.main_name_bg_error);
@@ -280,13 +303,13 @@ public class MainActivity extends ButterBaseActivity {
                     delayTimes = 5000;
                     break;
                 case ErrorCode.LIVE_TEST:
-                    tvLeftTopMsg.setText(!TextUtils.isEmpty(respBase.getLeftTopMsg())?respBase.getLeftTopMsg():"");
+                    tvLeftTopMsg.setText(!TextUtils.isEmpty(respBase.getLeftTopMsg()) ? respBase.getLeftTopMsg() : "");
                     tvLeftTopMsg.setTextColor(Color.YELLOW);
                     break;
                 default:
-                    tvResult.setText(!TextUtils.isEmpty(respBase.getMessage())?Html.fromHtml(respBase.getMessage()):"");
+                    tvResult.setText(!TextUtils.isEmpty(respBase.getMessage()) ? Html.fromHtml(respBase.getMessage()) : "");
                     tvResult.setTextColor(Color.YELLOW);
-                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg())?respBase.getRightTopMsg():"");
+                    tvRightTopMsg.setText(!TextUtils.isEmpty(respBase.getRightTopMsg()) ? respBase.getRightTopMsg() : "");
                     tvRightTopMsg.setTextColor(Color.YELLOW);
                     tvResult.setBackgroundResource(R.drawable.main_dialog_bg);
                     tvName.setBackgroundResource(R.drawable.main_name_bg);
@@ -318,42 +341,42 @@ public class MainActivity extends ButterBaseActivity {
             Uri speekUri = null;
             switch (respBase.getCode()) {
                 case ErrorCode.WELCOME:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.welcome);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.welcome);
                     break;
                 case ErrorCode.CAMERA_ERROR:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.camera_error);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.camera_error);
                     break;
                 case ErrorCode.SERVER_ERROR:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.server_error);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.server_error);
                     break;
                 case ErrorCode.READ_CARD_ERROR:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.card_error);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.card_error);
                     break;
                 case ErrorCode.PLEASE_FACE_UP_TO_CAMERA:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.please_face_up_to_camera);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.please_face_up_to_camera);
                     break;
                 case ErrorCode.CAPTURE_PHOTO_FAILED:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.capture_failed);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.capture_failed);
                     break;
                 case ErrorCode.DEVICE_NOT_REGISTERED:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.device_not_registered);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.device_not_registered);
                     break;
                 case ErrorCode.MATCH_CASE_FAILED:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.match_case_failed);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.match_case_failed);
                     break;
                 case ErrorCode.PLEASE_PASS:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.please_pass);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.please_pass);
                     break;
                 case ErrorCode.STRANGER_WARN:
-                    speekUri = Uri.parse("android.resource://com.azyd.face/"+R.raw.stranger_warn);
+                    speekUri = Uri.parse("android.resource://com.azyd.face/" + R.raw.stranger_warn);
                     break;
                 default:
                     break;
             }
-            if(speekUri!=null){
+            if (speekUri != null) {
                 try {
                     mediaPlayer.reset();
-                    mediaPlayer.setDataSource(MainActivity.this,speekUri);
+                    mediaPlayer.setDataSource(MainActivity.this, speekUri);
                     mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                     // 通过异步的方式装载媒体资源
                     mediaPlayer.prepareAsync();
@@ -404,12 +427,12 @@ public class MainActivity extends ButterBaseActivity {
             }
             switch (cameraFaceData.getType()) {
                 case CameraPreview.CameraFaceData.PREVIEW:
-                        FacePreviewRequest request = new FacePreviewRequest();
-                        request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
-                                .setFeatureData(cameraFaceData.getFeatureData())
-                                .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
-                                .setFaceData(cameraFaceData.getFaceData());
-                        SingleDispatcher.getInstance().add(request);
+                    FacePreviewRequest request = new FacePreviewRequest();
+                    request.setImageSize(cameraFaceData.getImageWidth(), cameraFaceData.getImageHeight())
+                            .setFeatureData(cameraFaceData.getFeatureData())
+                            .setFaceDetectResult(cameraFaceData.getFaceDetectResult())
+                            .setFaceData(cameraFaceData.getFaceData());
+                    SingleDispatcher.getInstance().add(request);
                     break;
                 case CameraPreview.CameraFaceData.CAPTURE:
                     CapturePhotoRequest captureRequest = new CapturePhotoRequest();
@@ -467,7 +490,7 @@ public class MainActivity extends ButterBaseActivity {
                             @Override
                             public void accept(Long aLong) {
                                 //新拍人脸
-                                if(cameraView!=null){
+                                if (cameraView != null) {
                                     cameraView.takeIDCardPicture();
                                     mCardInfoPublishSubject.onNext(ic);
                                 }
@@ -567,13 +590,13 @@ public class MainActivity extends ButterBaseActivity {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer = null;
         }
-        IdFaceSdk.IdFaceSdkUninit();
+        closeSDK();
         closeLed();
         idCardHandler.removeMessages(HandlerMsg.READ_SUCCESS);
         idCardHandler.removeCallbacks(resetRun);
@@ -583,22 +606,25 @@ public class MainActivity extends ButterBaseActivity {
         if (cameraDisposable != null && !cameraDisposable.isDisposed()) {
             cameraDisposable.dispose();
         }
-        cameraView.onDestroy();
-        try{
+        if(cameraView!=null){
+            cameraView.onDestroy();
+        }
+
+        try {
             mHxCardReadManager.close();
-        } catch (Exception e){
+        } catch (Exception e) {
 
         }
         StrangerListManager.getInstance().onDestory();
         FaceListManager.getInstance().onDestory();
         SingleDispatcher.getInstance().quit();
         AppContext.getInstance().exit();
-
+        super.onDestroy();
     }
 
     @Override
     public void onBackPressed() {
-        IdFaceSdk.IdFaceSdkUninit();
+        closeSDK();
         closeLed();
         idCardHandler.removeMessages(HandlerMsg.READ_SUCCESS);
         idCardHandler.removeCallbacks(resetRun);
@@ -608,10 +634,9 @@ public class MainActivity extends ButterBaseActivity {
         if (cameraDisposable != null && !cameraDisposable.isDisposed()) {
             cameraDisposable.dispose();
         }
-        cameraView.onDestroy();
-        try{
+        try {
             mHxCardReadManager.close();
-        } catch (Exception e){
+        } catch (Exception e) {
 
         }
 
@@ -619,7 +644,7 @@ public class MainActivity extends ButterBaseActivity {
         SingleDispatcher.getInstance().quit();
 
         super.onBackPressed();
-        finish();
+
     }
 
 
@@ -629,51 +654,52 @@ public class MainActivity extends ButterBaseActivity {
     }
 
     private void openLed() {
-        if(AppInternal.getInstance().getIandosManager()!=null){
+        if (AppInternal.getInstance().getIandosManager() != null) {
             AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(true, false);
         }
 
     }
 
     private void closeLed() {
-        if(AppInternal.getInstance().getIandosManager()!=null){
+        if (AppInternal.getInstance().getIandosManager() != null) {
             AppInternal.getInstance().getIandosManager().ICE_LEDSwitch(false, false);
         }
 
     }
-    public void startSDK(){
-        closeSDK();
-        String ip = AppInternal.getInstance().getSdkIP();
-        IdFaceSdk.IdFaceSdkSetServer(this, ip, 6389, "张三san", "8888888", "研发部e");
-        int ret = IdFaceSdk.IdFaceSdkInit(this.getCacheDir().getAbsolutePath());
-        if (ret == 0) {
-            Toast.makeText(this,"sdk启动成功",Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this,"sdk启动失败",Toast.LENGTH_SHORT).show();
+
+    public Integer startSDK() {
+        if (!bSdkInit) {
+            String ip = AppInternal.getInstance().getSdkIP();
+            IdFaceSdk.IdFaceSdkSetServer(this, ip, 6389, "张三san", "8888888", "研发部e");
+            int ret = IdFaceSdk.IdFaceSdkInit(this.getCacheDir().getAbsolutePath());
+            return ret;
         }
+        return -1;
     }
-    public void closeSDK(){
-        try{
-            IdFaceSdk.IdFaceSdkUninit();
-        } catch (Exception e){
+
+    public void closeSDK() {
+        try {
+            if (bSdkInit) {
+                IdFaceSdk.IdFaceSdkUninit();
+                bSdkInit = false;
+            }
+
+        } catch (Exception e) {
 
         }
 
     }
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 11)
-        {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            {
+        if (requestCode == 11) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 //Settings.System.canWrite方法检测授权结果
-                if (Settings.System.canWrite(getApplicationContext()))
-                {
-                    Toast.makeText(MainActivity.this,"获取了权限",Toast.LENGTH_SHORT).show();
-                }else{
-                    Toast.makeText(MainActivity.this,"您拒绝了权限",Toast.LENGTH_SHORT).show();
+                if (Settings.System.canWrite(getApplicationContext())) {
+                    Toast.makeText(MainActivity.this, "获取了权限", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "您拒绝了权限", Toast.LENGTH_SHORT).show();
                 }
             }
         }

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * @author suntao
@@ -115,6 +116,8 @@ public class PreviewRequest extends BaseRequest {
                     //Map<String,Object> rf= gateService.openDoor(RequestParam.build().with("open",true).with("reverse",true).create()).execute().body();
 
                     Observable.timer(500, TimeUnit.MILLISECONDS)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(Schedulers.io())
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {

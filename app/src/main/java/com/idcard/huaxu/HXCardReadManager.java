@@ -54,7 +54,7 @@ public class HXCardReadManager {
     public HXCardReadManager(Handler handler, Context context) {
         mHandler = handler;
         mContext = context;
-        mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
+
     }
     public void start(){
         tryGetUsbPermission();
@@ -266,6 +266,7 @@ public class HXCardReadManager {
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
 
         boolean has_idcard_usb = false;
+        mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         for (final UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
 
             if(usbDevice.getVendorId() == 8301 && usbDevice.getProductId() == 1)//身份证设备USB
